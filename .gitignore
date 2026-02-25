@@ -3,8 +3,7 @@
 Thumbs.db
 
 # Editor
-.vscode/*
-!.vscode/settings.json
+.vscode/
 .idea/
 *.swp
 
@@ -25,3 +24,6 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Workspace memos
+/tmp/

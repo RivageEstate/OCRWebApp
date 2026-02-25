@@ -5,4 +5,3 @@ Store operational runbooks including release, monitoring, and incident response.
 
 - ファイル名: `YYYYMMDD-<slug>.md`
 - ひな形: `docs/templates/operations-template.md`
-- リリースノートひな形: `docs/templates/release-notes-template.md`
