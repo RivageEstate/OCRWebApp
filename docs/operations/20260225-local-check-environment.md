@@ -40,6 +40,8 @@ bash scripts/setup-local-check-env.sh
 bash scripts/run-local-checks.sh
 ```
 
+`run-local-checks.sh` は実行時に自動でリポジトリルートへ移動してから検証するため、どのカレントディレクトリから呼び出しても同じ結果になる。
+
 実行内容:
 
 - `bash scripts/check.sh`
