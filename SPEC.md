@@ -1,6 +1,6 @@
 # SPEC.md
 
-- Title: OCRWebApp 仕様（Phase 0中心）
+- Title: OCRWebApp 仕様（MVP + システム設計前提）
 - Status: Draft
 - Created: 2026-02-25
 - Last Updated: 2026-02-25
@@ -9,121 +9,209 @@
 
 ## 1. 背景
 
-物件概要書（主に画像/PDF）から手入力で情報を起こす工数が大きく、案件化・提案・銀行提出・紹介フィー回収までの後続業務が分断されている。  
-最初に「OCR/AIで叩き台を作り、人が短時間で確定できる仕組み」を提供し、後続フェーズで業務OSへ拡張する。
+物件概要書（画像/PDF）をOCRとLLMで構造化し、編集可能な規定フォーマットとして保存・出力する。  
+MVPでは「アップロード→非同期解析→編集→確定→出力」を最短で提供し、後続でDeal化や紹介フィー回収機能へ拡張する。
 
-## 2. プロダクトゴール
+## 2. システムアーキテクチャ
 
-- 短期（Phase 0）: 物件概要書の画像を、編集可能な規定フォーマットへ変換し、PDF/CSVとして出力できる。
-- 中長期（Phase 1-4）: Deal管理、シミュレーション、銀行提出書類自動作成、紹介フィー回収まで一気通貫で管理する。
+### 2.1 全体構成
 
-## 3. フェーズロードマップ
+- Frontend / API: Next.js（App Router, Route Handlers）
+- Hosting: Vercel
+- Database: PostgreSQL（Supabase, ap-northeast-1）
+- ORM: Prisma
+- Auth: NextAuth（Google OAuth）
+- Storage: S3互換（Cloudflare R2想定）
+- Async Worker: Cloud Run
+- OCR: Google Vision API
+- LLM Extraction: OpenAI API（Structured Outputs）
 
-- Phase 0: OCR/AI解析 + 規定フォーマット化 + 編集 + エクスポート
-- Phase 1: OCRデータのDeal化（ステータス、タグ、メモ、提案雛形）
-- Phase 2: NOI/CF/DSCRシミュレーション、シナリオ比較、提案書高度化
-- Phase 3: 銀行提出書類（物件概要/収支/資金計画/返済計画）のテンプレ自動生成
-- Phase 4: 紹介ビジネスOS（紹介フィー、マイルストーン、請求、入金消込、監査ログ）
+### 2.2 リージョン方針
 
-## 4. Phase 0 スコープ（確定）
+- Vercel Functions: hnd1（Tokyo）
+- Supabase: ap-northeast-1
+- Cloud Run: asia-northeast1
+- Storage: Tokyoリージョン
 
-### 4.1 機能要件
+リージョンは必ず東京で統一する。
 
-1. 認証
-- Googleログインを提供する。
+## 3. アプリケーション構成
 
-2. 物件作成
-- 1物件に対して複数画像をアップロード可能にする。
+### 3.1 ディレクトリ構成
 
-3. OCR/AI解析
-- 画像からテキスト抽出し、規定フォーマットへ自動マッピングする。
-- 各フィールドに `confidence (0-1)` を保持する。
-- 各フィールドに抽出根拠（画像ID、座標、該当テキスト）を保持する。
+```text
+app/
+  (ui)
+  api/
+lib/
+  db/
+  storage/
+  ocr/
+  extractor/
+  jobs/
+```
 
-4. 編集・確定
-- 価格、賃料、面積など数値項目を含め、全項目を手動編集可能にする。
-- 変更履歴（誰が、いつ、何を変更したか）を保持する。
+### 3.2 責務分離
 
-5. 出力
-- 規定フォーマットのPDFを出力できる。
-- 一覧活用向けにCSVを出力できる。
+- UI層: 表示・編集
+- API層: 認証、バリデーション、ジョブ登録
+- Service層: ビジネスロジック
+- Provider層: OCR / LLM / Storage 抽象化
 
-### 4.2 規定フォーマット項目（Phase 0）
+## 4. 非同期処理設計
 
-1. 物件基本
-- 物件名（任意）
-- 所在地（都道府県/市区町村/町名）
-- 交通（最寄駅・徒歩分）
-- 種別（共同住宅/長屋/戸建/ビル等）
-- 構造（木造/鉄骨/RC）
-- 築年または竣工予定
+### 4.1 ジョブモデル
 
-2. 面積・規模
-- 土地面積（㎡）
-- 延床面積（㎡）
-- 戸数（住戸数）
+`jobs.status` は以下の4状態を持つ。
+- `queued`
+- `processing`
+- `succeeded`
+- `failed`
 
-3. 価格・収益
-- 価格（売買価格または総事業費の判明値）
-- 想定家賃（満室想定・月額）
-- 現況賃料（任意）
-- 表面利回り（記載がある場合）
-- 備考
+ジョブは必ずDBに保存し、Workerが取得して実行する。
 
-4. 運用メタ
-- 抽出信頼度（フィールド単位）
-- 抽出元情報（画像ID/座標/該当テキスト）
+### 4.2 処理フロー
 
-## 5. Phase 0 画面要件（確定）
+1. ユーザーが画像アップロード
+2. `documents` レコード作成
+3. `jobs` レコード作成（`queued`）
+4. Workerがジョブ取得し `processing` に更新
+5. OCR実行
+6. LLM抽出実行
+7. 正規化データ保存
+8. `jobs.status` を `succeeded` または `failed` に更新
 
-1. ログイン画面（Google）
-2. 新規作成画面（画像アップロード）
-3. 解析中画面（進捗表示）
-4. 結果画面
-- 左: 画像プレビュー（ページ切替）
-- 右: 規定フォーマット編集フォーム
-- 各項目: 信頼度表示、抽出元ハイライトジャンプ
-5. 保存
-6. 出力（PDF/CSV）
+同期APIではOCRを実行しない。
 
-## 6. データ設計方針（Phase 0）
+## 5. データベース設計（MVP必須）
 
-### 6.1 コアテーブル
+### 5.1 users
 
-- `users`: Google認証ユーザー
-- `properties`: 物件マスタ（1物件=1レコード）
-- `property_images`: 物件画像（複数）
-- `extractions`: OCR/AIの生データ（raw text、構造化、confidence、bbox）
-- `property_fields`: 確定済み規定フォーマット値
-- `field_revisions`: フィールド編集履歴
+- `id`
+- `email`
+- `name`
+- `created_at`
 
-### 6.2 設計原則
+### 5.2 documents
 
-- 抽出値（機械生成）と確定値（人の編集後）を分離して保持する。
-- 数値項目は将来拡張を見据えて型を厳格化する（値、単位、月額/年額）。
-- property ID を後続の Deal/Proposal 起点として再利用できるようにする。
+- `id`
+- `user_id`
+- `file_path`
+- `created_at`
 
-## 7. 非スコープ（Phase 0では実施しない）
+### 5.3 extractions
 
-- 投資家・外部パートナー・施工会社の本格CRM
-- 収支シミュレーション（NOI/CF/DSCR）
-- 銀行向け書類テンプレートの自動生成
-- 紹介フィー請求/入金消込ワークフロー
+- `id`
+- `document_id`
+- `raw_text`
+- `ocr_provider`
+- `confidence`
+- `bounding_boxes` (JSONB)
+- `created_at`
 
-## 8. 将来仕様（合意済み、後続実装）
+### 5.4 normalized_properties
 
-- 対象: 新築/建設（請負・建てて運用）中心
-- エリア: 一都三県
-- 施工構造: 木造/鉄骨/RC（価格帯制限なし）
-- 紹介フィー: 請負金額（税抜）×3%
-- マイルストーン: 契約10% / 着工30% / 上棟30% / 完成引渡し30%
-- 請求先: 施工会社
-- 必須業務フロー: 証跡添付 → 承認 → 請求 → 入金消込（監査ログ必須）
+- `id`
+- `document_id`
+- `property_name`
+- `address`
+- `price`
+- `rent`
+- `yield`
+- `structure`
+- `built_year`
+- `station_info`
+- `editable_fields` (JSONB)
+- `created_at`
+- `updated_at`
 
-## 9. 受け入れ基準（Phase 0）
+### 5.5 revisions
 
-1. 画像アップロードから解析結果表示まで一連の操作が完了できる。
-2. 規定フォーマットの主要項目が編集・保存できる。
-3. 各フィールドの信頼度と抽出元が参照できる。
-4. 編集履歴が追跡できる。
-5. 規定フォーマットのPDF/CSV出力が可能である。
+- `id`
+- `property_id`
+- `changed_by`
+- `before` (JSONB)
+- `after` (JSONB)
+- `created_at`
+
+### 5.6 jobs
+
+- `id`
+- `document_id`
+- `status`
+- `error_message`
+- `created_at`
+- `updated_at`
+
+## 6. Prisma設計方針
+
+- UUID主キーを採用する。
+- JSONBを活用する（`bounding_boxes`, `editable_fields`）。
+- Supabase pooler利用時を考慮し prepared statements を無効化する。
+- Prismaマイグレーションは必ずバージョン管理する。
+
+## 7. 抽象化設計
+
+### 7.1 StorageAdapter
+
+```ts
+interface StorageAdapter {
+  upload(file: File | Buffer): Promise<string>;
+  getSignedUrl(path: string): Promise<string>;
+  delete(path: string): Promise<void>;
+}
+```
+
+- 実装:
+  - `R2StorageAdapter`
+  - `S3StorageAdapter`
+- アプリケーションコードからStorage SDKを直接呼ばない。
+
+### 7.2 OCRProvider
+
+```ts
+interface OCRProvider {
+  extractText(imageUrl: string): Promise<OCRResult>;
+}
+```
+
+- 実装:
+  - `GoogleVisionProvider`
+  - （将来）`AzureVisionProvider`
+
+### 7.3 Extractor
+
+```ts
+interface Extractor {
+  extract(rawText: string): Promise<NormalizedFields>;
+}
+```
+
+- OpenAI Structured Outputs で JSON スキーマを固定する。
+- `extractor_version` 列を追加して抽出ロジックのバージョン管理を可能にする。
+
+## 8. セキュリティ設計
+
+- 認証必須（NextAuth）
+- `documents` は所有者のみアクセス可
+- Signed URLは期限付きで発行
+- APIはすべてsession検証を必須化
+
+## 9. パフォーマンス設計
+
+- OCR/LLMは必ず非同期で実行する。
+- UIは2秒間隔ポーリングでジョブ状態を反映する。
+- 将来はWebhook/SSE対応へ拡張可能な設計にする。
+
+## 10. 受け入れ基準（MVP）
+
+1. アップロード時に `documents` と `jobs(queued)` が作成される。
+2. WorkerでOCR/LLMが実行され、`extractions` と `normalized_properties` が保存される。
+3. APIで同期OCRが実行されない。
+4. 認証済みユーザーのみ自分のDocumentへアクセスできる。
+5. 編集差分が `revisions` に記録される。
+6. 東京リージョン統一方針に反しない構成でデプロイできる。
+
+## 11. 関連ドキュメント
+
+- `docs/design/20260225-system-architecture.md`
