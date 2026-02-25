@@ -121,6 +121,12 @@ Phase 0 初手APIは OpenAPI で契約を固定する。
 - 収集メトリクス: ジョブ失敗率、ジョブ滞留時間、ジョブ処理件数
 - 通知条件: 閾値超過時にアラート送信
 
+## 実装メモ（2026-02-25時点） / Implementation Notes (as of 2026-02-25)
+
+- Phase 0 の初期実装では、`POST /api/documents` `GET /api/jobs/{jobId}` `GET /api/documents/{documentId}` の雛形を追加済み。
+- 認証は暫定的に `x-user-id` ヘッダー（UUID）で代替し、NextAuthセッション連携へ差し替え予定。
+- Storage は `StorageAdapter` のスタブ実装を経由し、アプリ層でSDK直呼びを行わない構造を先に固定している。
+
 ## 代替案 / Alternatives
 
 - API同期実行案:

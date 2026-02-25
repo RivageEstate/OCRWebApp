@@ -40,6 +40,9 @@
 - `SPEC.md`: 現時点の仕様ドラフト（MVP + システム設計前提）
 - `docs/`: 要件・設計・運用・ADR
 - `prisma/`: Phase 0 のDBスキーマとマイグレーション
+- `app/`: Next.js App Router（UI + API）
+- `lib/`: DB・認証・Provider抽象などのアプリ共通層
+- `tests/`: ユニットテスト
 - `scripts/check.sh`: ドキュメントとテンプレートの軽量チェック
 - `tmp/`: 検討メモ（実装判断の一次情報には使わない）
 
@@ -56,6 +59,33 @@
 ```bash
 bash scripts/check.sh
 ```
+
+## 実装土台のセットアップ（Phase 0）
+
+```bash
+npm install
+cp .env.example .env
+npx prisma generate
+npx prisma migrate dev
+npm run dev
+```
+
+## テスト
+
+```bash
+npm run test
+```
+
+## API雛形（Phase 0 1本目PR対象）
+
+- `POST /api/documents`
+- `GET /api/jobs/{jobId}`
+- `GET /api/documents/{documentId}`
+
+注記:
+
+- 現在のAPI雛形では暫定的に `x-user-id` ヘッダー（UUID）で認証を代替しています。
+- 次のステップで NextAuth セッション検証へ差し替える前提です。
 
 ## ライセンス
 
