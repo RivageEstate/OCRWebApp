@@ -60,6 +60,27 @@
 bash scripts/check.sh
 ```
 
+## 仮想化開発環境（推奨）
+
+前提:
+
+- Docker Desktop
+- VS Code + Dev Containers 拡張
+
+手順:
+
+1. VS Code で本リポジトリを開く。
+2. `Dev Containers: Reopen in Container` を実行する。
+3. コンテナ起動後、以下を実行する。
+
+```bash
+cp .env.example .env
+npx prisma migrate dev
+npm run dev
+```
+
+`docker-compose.yml` で `app` と `db(PostgreSQL)` を起動し、`DATABASE_URL` は `db:5432` を参照する。
+
 ## 実装土台のセットアップ（Phase 0）
 
 ```bash
