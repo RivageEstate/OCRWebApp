@@ -63,6 +63,7 @@ lib/
 ### 4.1 ジョブモデル
 
 `jobs.status` は以下の4状態を持つ。
+
 - `queued`
 - `processing`
 - `succeeded`

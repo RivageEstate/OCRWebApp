@@ -1,3 +1,5 @@
+# OCRWebApp システムアーキテクチャ（MVP）
+
 - Title: OCRWebApp システムアーキテクチャ（MVP）
 - Status: Draft
 - Created: 2026-02-25
@@ -67,6 +69,7 @@ OpenAI Structured Outputs を使い、JSONスキーマを固定する。
 ## データ / Data Model
 
 MVPテーブル:
+
 - `users`
 - `documents`
 - `extractions`
@@ -75,6 +78,7 @@ MVPテーブル:
 - `jobs`
 
 設計方針:
+
 - UUID主キー
 - JSONB（`bounding_boxes`, `editable_fields`）
 - Prismaマイグレーションを必ず管理
