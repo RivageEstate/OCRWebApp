@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum JobStatus {
+  queued
+  processing
+  succeeded
+  failed
+}
+
+model User {
+  id        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String     @unique
+  name      String?
+  createdAt DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  documents Document[]
+  revisions Revision[] @relation("RevisionChangedBy")
+
+  @@map("users")
+}
+
+model Document {
+  id        String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String       @map("user_id") @db.Uuid
+  filePath  String       @map("file_path")
+  createdAt DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Restrict)
+  extractions          Extraction[]
+  normalizedProperties NormalizedProperty[]
+  jobs                 Job[]
+
+  @@index([userId], map: "documents_user_id_idx")
+  @@map("documents")
+}
+
+model Extraction {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId       String    @map("document_id") @db.Uuid
+  rawText          String    @map("raw_text")
+  ocrProvider      String    @map("ocr_provider")
+  confidence       Decimal?  @db.Decimal(5, 4)
+  boundingBoxes    Json      @map("bounding_boxes") @db.JsonB
+  extractorVersion String    @map("extractor_version")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId], map: "extractions_document_id_idx")
+  @@map("extractions")
+}
+
+model NormalizedProperty {
+  id             String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId     String    @map("document_id") @db.Uuid
+  propertyName   String?   @map("property_name")
+  address        String?
+  price          Decimal?  @db.Decimal(14, 2)
+  rent           Decimal?  @db.Decimal(14, 2)
+  yield          Decimal?  @db.Decimal(5, 2)
+  structure      String?
+  builtYear      String?   @map("built_year")
+  stationInfo    String?   @map("station_info")
+  editableFields Json      @map("editable_fields") @db.JsonB
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  document  Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  revisions Revision[]
+
+  @@index([documentId], map: "normalized_properties_document_id_idx")
+  @@map("normalized_properties")
+}
+
+model Revision {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  propertyId String   @map("property_id") @db.Uuid
+  changedBy  String   @map("changed_by") @db.Uuid
+  before     Json     @db.JsonB
+  after      Json     @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  property NormalizedProperty @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  user     User               @relation("RevisionChangedBy", fields: [changedBy], references: [id], onDelete: Restrict)
+
+  @@index([propertyId], map: "revisions_property_id_idx")
+  @@index([changedBy], map: "revisions_changed_by_idx")
+  @@map("revisions")
+}
+
+model Job {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  documentId   String    @map("document_id") @db.Uuid
+  status       JobStatus @default(queued)
+  errorMessage String?   @map("error_message")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId], map: "jobs_document_id_idx")
+  @@index([status], map: "jobs_status_idx")
+  @@map("jobs")
+}
