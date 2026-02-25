@@ -2,7 +2,8 @@
 
 - Title:
 - Status: Proposed | Accepted | Superseded
-- Date: YYYY-MM-DD
+- Created: YYYY-MM-DD
+- Last Updated: YYYY-MM-DD
 - Owner:
 - Language: JA/EN
 

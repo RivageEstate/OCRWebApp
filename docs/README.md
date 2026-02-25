@@ -10,6 +10,7 @@ This directory stores project documentation alongside code.
 - `operations/`: 運用手順 / Operational runbooks
 - `adr/`: 重要判断記録 / Architectural Decision Records
 - `templates/`: 文書テンプレート / Document templates
+  - `release-notes-template.md`: リリースノート作成用 / Release notes template
 
 ## 命名規則 / Naming
 

@@ -1,0 +1,17 @@
+changelog:
+  categories:
+    - title: "追加 / Added"
+      labels:
+        - "feature"
+        - "enhancement"
+    - title: "修正 / Fixed"
+      labels:
+        - "bug"
+        - "fix"
+    - title: "ドキュメント / Docs"
+      labels:
+        - "documentation"
+        - "docs"
+    - title: "その他 / Other"
+      labels:
+        - "*"
