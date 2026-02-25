@@ -28,6 +28,7 @@
 採用案:
 
 1. データモデル命名（Phase 0）
+
 - `users`
 - `documents`
 - `extractions`
@@ -35,7 +36,8 @@
 - `revisions`
 - `jobs`
 
-2. API最小スコープ（1本目PR）
+1. API最小スコープ（1本目PR）
+
 - `POST /api/documents`
   - 役割: ファイル保存、`documents` 作成、`jobs(queued)` 作成
   - 禁止: OCR/LLM の同期実行

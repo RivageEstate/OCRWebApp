@@ -109,12 +109,13 @@ bash scripts/check.sh
 ```
 
 ## 影響範囲・リスク
+
 - DB 初期スキーマのため、後続PRに影響が広い。
 - 命名変更が発生すると下流のAPI/Worker/UIに連鎖するため、今PRで固定する。
 
 ## 補足
+
 - OCRProvider / Extractor / Worker の本処理は別PRで追加する。
-```
 
 ## ロールバック / Rollback
 
