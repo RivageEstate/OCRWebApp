@@ -4,7 +4,7 @@
 - Status: Draft
 - Created: 2026-02-25
 - Last Updated: 2026-02-25
-- Owner: TBD
+- Owner: keikur1hara
 - Language: JA/EN
 
 ## 背景 / Background
@@ -24,6 +24,8 @@
 
 - テーブル命名は `SPEC.md` に合わせる
 - 最初の実装PRは「アップロード + ジョブ登録 + 状態参照」に限定する
+- API契約は OpenAPI で固定する
+- 認証・ジョブ制御・Storage・監視の初期運用値を固定する
 
 採用案:
 
@@ -46,6 +48,16 @@
 - `GET /api/documents/{documentId}`
   - 役割: 所有者検証つきで文書メタデータ返却
 
+1. 推奨設定の採用（本書で確定）
+
+- API契約: OpenAPIを採用し、`docs/design/20260225-phase0-api-openapi.yaml` を仕様源泉とする
+- Prisma: UUID主キー + 必須FK + `created_at/updated_at` + 主要index
+- 認証: `session.user.id = users.id` で統一
+- Job制御: `retry=3`, `timeout=300s`
+- Storage: 東京リージョン優先のS3互換を標準採用（R2は将来選択肢）
+- Upload制約: `jpg/png/pdf`, 1ファイル20MB, 1物件20枚
+- 監視: 失敗率・滞留時間・処理件数を計測し閾値通知
+
 ## 非スコープ / Out of Scope
 
 - OCRProvider / Extractor の本実装
@@ -61,6 +73,7 @@
 - `GET /api/jobs/{jobId}` でジョブ状態を取得できる
 - `GET /api/documents/{documentId}` が所有者のみ参照可能である
 - Prisma マイグレーションが作成・バージョン管理される
+- 上記3 API の OpenAPI 仕様が管理される
 
 ## 制約 / Constraints
 
