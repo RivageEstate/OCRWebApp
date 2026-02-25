@@ -99,6 +99,12 @@ API同期処理でOCR/LLMを実行しない。
 - Documentは所有者のみアクセス許可
 - Signed URLは短期有効期限
 
+## 実装メモ（2026-02-25時点） / Implementation Notes (as of 2026-02-25)
+
+- Phase 0 の初期実装では、`POST /api/documents` `GET /api/jobs/{jobId}` `GET /api/documents/{documentId}` の雛形を追加済み。
+- 認証は暫定的に `x-user-id` ヘッダー（UUID）で代替し、NextAuthセッション連携へ差し替え予定。
+- Storage は `StorageAdapter` のスタブ実装を経由し、アプリ層でSDK直呼びを行わない構造を先に固定している。
+
 ## 代替案 / Alternatives
 
 - API同期実行案:
