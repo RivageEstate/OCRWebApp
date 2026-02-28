@@ -1,5 +1,10 @@
 extends: default
 
+ignore: |
+  **/node_modules/**
+  **/.next/**
+  **/dist/**
+
 rules:
   line-length: disable
   truthy: disable

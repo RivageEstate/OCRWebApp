@@ -1,0 +1,11 @@
+{
+  "name": "@ocrwebapp/db",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.4.1"
+  }
+}

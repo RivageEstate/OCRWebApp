@@ -101,7 +101,7 @@ API同期処理でOCR/LLMを実行しない。
 
 Phase 0 初手APIは OpenAPI で契約を固定する。  
 対象は `POST /api/documents`, `GET /api/jobs/{jobId}`, `GET /api/documents/{documentId}`。  
-仕様ファイルは `docs/design/20260225-phase0-api-openapi.yaml` とする。
+仕様ファイルは `contracts/openapi/phase0.yaml` とする。
 
 ## セキュリティ / Security
 

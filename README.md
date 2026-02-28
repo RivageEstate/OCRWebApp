@@ -39,9 +39,11 @@
 
 - `SPEC.md`: 現時点の仕様ドラフト（MVP + システム設計前提）
 - `docs/`: 要件・設計・運用・ADR
-- `prisma/`: Phase 0 のDBスキーマとマイグレーション
-- `app/`: Next.js App Router（UI + API）
-- `lib/`: DB・認証・Provider抽象などのアプリ共通層
+- `contracts/`: OpenAPI/JSON Schema などの機械可読な契約
+- `packages/db/prisma/`: Phase 0 のDBスキーマとマイグレーション
+- `apps/web/`: Next.js（UI + API）
+- `apps/worker/`: Cloud Run Worker（非同期処理、Phase 0 は骨格のみ）
+- `packages/`: 共通ドメイン/DB/Provider 実装（web/worker 共有）
 - `tests/`: ユニットテスト
 - `scripts/check.sh`: ドキュメントとテンプレートの軽量チェック
 - `tmp/`: 検討メモ（実装判断の一次情報には使わない）
@@ -64,9 +66,9 @@ bash scripts/check.sh
 
 ```bash
 npm install
-cp .env.example .env
-npx prisma generate
-npx prisma migrate dev
+cp apps/web/.env.example apps/web/.env
+npm run prisma:generate
+npm run prisma:migrate:dev
 npm run dev
 ```
 

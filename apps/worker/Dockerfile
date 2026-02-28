@@ -1,0 +1,18 @@
+FROM node:22-slim
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+COPY apps/web/package.json apps/web/package.json
+COPY apps/worker/package.json apps/worker/package.json
+COPY packages/domain/package.json packages/domain/package.json
+COPY packages/db/package.json packages/db/package.json
+COPY packages/providers/package.json packages/providers/package.json
+
+RUN npm ci
+
+COPY apps/worker apps/worker
+
+RUN npm --workspace apps/worker run build
+
+CMD ["node", "apps/worker/dist/main.js"]

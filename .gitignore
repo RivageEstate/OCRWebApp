@@ -5,16 +5,17 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
+.claude/
 *.swp
 
 # Logs
 *.log
 
 # Node
-node_modules/
-dist/
-coverage/
-.next/
+**/node_modules/
+**/dist/
+**/coverage/
+**/.next/
 
 # Python
 __pycache__/
@@ -28,3 +29,4 @@ __pycache__/
 
 # Workspace memos
 /tmp/
+commit-changes.sh
