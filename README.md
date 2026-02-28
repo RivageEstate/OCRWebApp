@@ -35,6 +35,8 @@
 
 詳細は [SPEC.md](./SPEC.md) と `docs/` を参照してください。
 
+- デプロイ方法・ローカル実行方法・利用方法: [docs/operations/20260228-deployment-development-usage-guide.md](./docs/operations/20260228-deployment-development-usage-guide.md)
+
 ## リポジトリ構成
 
 - `SPEC.md`: 現時点の仕様ドラフト（MVP + システム設計前提）
@@ -105,16 +107,13 @@ docker compose run --rm worker
 npm run test
 ```
 
-## API雛形（Phase 0 1本目PR対象）
+## API（Phase 0）
 
 - `POST /api/documents`
 - `GET /api/jobs/{jobId}`
 - `GET /api/documents/{documentId}`
 
-注記:
-
-- 現在のAPI雛形では暫定的に `x-user-id` ヘッダー（UUID）で認証を代替しています。
-- 次のステップで NextAuth セッション検証へ差し替える前提です。
+認証は NextAuth v5（Google OAuth）を使用します。`AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` / `AUTH_SECRET` の設定が必要です。
 
 ## ライセンス
 
