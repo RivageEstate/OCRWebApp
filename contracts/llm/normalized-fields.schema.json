@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "NormalizedFields",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "property_name": { "type": "string" },
+    "address": { "type": "string" },
+    "price": { "type": "string", "description": "例: 1億2000万円 / 120,000,000" },
+    "rent": { "type": "string", "description": "例: 50万円/月" },
+    "yield": { "type": "string", "description": "例: 5.2%" },
+    "structure": { "type": "string" },
+    "built_year": { "type": "string", "description": "例: 1998 / 平成10年" },
+    "station_info": { "type": "string" },
+    "editable_fields": {
+      "type": "object",
+      "description": "後続で編集可能項目を増やすための拡張領域（JSONB想定）",
+      "additionalProperties": true
+    }
+  }
+}
+

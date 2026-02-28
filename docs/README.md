@@ -9,6 +9,7 @@ This directory stores project documentation alongside code.
 - `design/`: 設計情報 / Design documents
 - `operations/`: 運用手順 / Operational runbooks
 - `adr/`: 重要判断記録 / Architectural Decision Records
+- `phases/`: Phase別の索引（リンク集） / Phase indexes (link hub)
 - `templates/`: 文書テンプレート / Document templates
 
 ## 命名規則 / Naming

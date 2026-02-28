@@ -50,7 +50,7 @@
 
 1. 推奨設定の採用（本書で確定）
 
-- API契約: OpenAPIを採用し、`docs/design/20260225-phase0-api-openapi.yaml` を仕様源泉とする
+- API契約: OpenAPIを採用し、`contracts/openapi/phase0.yaml` を仕様源泉とする
 - Prisma: UUID主キー + 必須FK + `created_at/updated_at` + 主要index
 - 認証: `session.user.id = users.id` で統一
 - Job制御: `retry=3`, `timeout=300s`

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidJobTransition } from "@/lib/jobs/status";
+import { isValidJobTransition } from "@ocrwebapp/domain";
 
 describe("isValidJobTransition", () => {
   describe("allowed transitions", () => {

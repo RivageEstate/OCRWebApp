@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getStorageAdapter } from "@/lib/storage/adapter";
+import { getStorageAdapter } from "@ocrwebapp/providers";
 
 describe("LocalStubStorageAdapter", () => {
   const adapter = getStorageAdapter();

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidUuid } from "@/lib/validation/uuid";
+import { isValidUuid } from "@ocrwebapp/domain";
 
 describe("isValidUuid", () => {
   describe("valid UUIDs", () => {

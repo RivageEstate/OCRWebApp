@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { requireUserId, UnauthorizedError } from "@/lib/auth/session";
+import { requireUserId, UnauthorizedError } from "@web/lib/auth/session";
 
 const VALID_UUID = "9f4e4a5f-7a4d-4a7f-b006-9225f39ae4d8";
 
