@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ocrwebapp
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ocrwebapp"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - apps/web/.env.example
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/ocrwebapp?schema=public
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: local-dev-insecure-secret
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    command:
+      - sh
+      - -lc
+      - npm run prisma:generate && npm --workspace apps/web run dev -- --hostname 0.0.0.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - next_cache:/app/apps/web/.next
+
+  worker:
+    profiles: ["worker"]
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - apps/web/.env.example
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/ocrwebapp?schema=public
+      JOB_PAYLOAD_JSON: '{"job_id":"11111111-1111-1111-1111-111111111111","attempt":1,"trace_id":"local-docker"}'
+    command:
+      - sh
+      - -lc
+      - npm --workspace apps/worker run build && node apps/worker/dist/main.js
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+
+volumes:
+  postgres_data:
+  node_modules:
+  next_cache:

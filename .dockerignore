@@ -1,0 +1,14 @@
+.git
+.github
+.vscode
+.claude
+node_modules
+**/node_modules
+**/.next
+**/dist
+tmp
+Add
+Branches
+processing
+succeeded
+*.log
