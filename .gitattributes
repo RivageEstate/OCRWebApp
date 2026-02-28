@@ -4,3 +4,7 @@
 *.md text eol=lf
 *.yml text eol=lf
 *.yaml text eol=lf
+
+# package-lock.json はマージ時に競合を起こさずベース側を残す。
+# マージ後に npm install を実行すれば正しく再生成される。
+package-lock.json merge=ours
