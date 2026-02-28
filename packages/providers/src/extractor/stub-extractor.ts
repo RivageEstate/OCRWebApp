@@ -1,10 +1,6 @@
 import type { Extractor, NormalizedFields } from "@ocrwebapp/domain";
 
 export class StubExtractor implements Extractor {
-  get version(): string {
-    return "stub-v1";
-  }
-
   async extract(_rawText: string): Promise<NormalizedFields> {
     return {
       propertyName: null,
