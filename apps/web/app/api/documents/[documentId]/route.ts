@@ -26,7 +26,6 @@ export async function GET(request: Request, { params }: Params) {
       select: {
         id: true,
         userId: true,
-        filePath: true,
         createdAt: true
       }
     });
@@ -37,9 +36,8 @@ export async function GET(request: Request, { params }: Params) {
 
     return NextResponse.json(
       {
-        id: document.id,
+        document_id: document.id,
         user_id: document.userId,
-        file_path: document.filePath,
         created_at: document.createdAt
       },
       { status: 200 }

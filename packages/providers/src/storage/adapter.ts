@@ -1,4 +1,5 @@
 import type { StorageAdapter } from "@ocrwebapp/domain";
+import { R2StorageAdapter } from "./r2-adapter";
 
 class LocalStubStorageAdapter implements StorageAdapter {
   async upload(file: File): Promise<string> {
@@ -16,6 +17,9 @@ class LocalStubStorageAdapter implements StorageAdapter {
 }
 
 export function getStorageAdapter(): StorageAdapter {
+  if (process.env.R2_BUCKET) {
+    return new R2StorageAdapter();
+  }
   return new LocalStubStorageAdapter();
 }
 
