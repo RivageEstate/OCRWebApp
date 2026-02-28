@@ -86,8 +86,13 @@ docker compose run --rm web \
 
 ```bash
 docker compose exec db psql -U postgres -d ocrwebapp -c \
-  "insert into users (id, email, name) values ('11111111-1111-1111-1111-111111111111', 'local@example.com', 'Local User') on conflict (id) do nothing;"
+  "insert into users (id, email, name) values ('550e8400-e29b-41d4-a716-446655440000', 'local@example.com', 'Local User') on conflict (id) do nothing;"
 ```
+
+注記:
+
+- `x-user-id` は UUID v4 形式である必要がある
+- 例として `550e8400-e29b-41d4-a716-446655440000` を使う
 
 ## Web 起動 / Start Web
 
@@ -116,7 +121,7 @@ curl http://localhost:3000
 
 ```bash
 curl -X POST http://localhost:3000/api/documents \
-  -H 'x-user-id: 11111111-1111-1111-1111-111111111111' \
+  -H 'x-user-id: 550e8400-e29b-41d4-a716-446655440000' \
   -F 'file=@/path/to/sample.jpg'
 ```
 
@@ -130,14 +135,14 @@ curl -X POST http://localhost:3000/api/documents \
 
 ```bash
 curl http://localhost:3000/api/jobs/<job_id> \
-  -H 'x-user-id: 11111111-1111-1111-1111-111111111111'
+  -H 'x-user-id: 550e8400-e29b-41d4-a716-446655440000'
 ```
 
 文書取得:
 
 ```bash
 curl http://localhost:3000/api/documents/<document_id> \
-  -H 'x-user-id: 11111111-1111-1111-1111-111111111111'
+  -H 'x-user-id: 550e8400-e29b-41d4-a716-446655440000'
 ```
 
 ## Worker スタブ確認 / Worker Stub Check

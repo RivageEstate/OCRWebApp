@@ -88,7 +88,7 @@ docker compose up web
 
 ```bash
 docker compose exec db psql -U postgres -d ocrwebapp -c \
-  "insert into users (id, email, name) values ('11111111-1111-1111-1111-111111111111', 'local@example.com', 'Local User') on conflict (id) do nothing;"
+  "insert into users (id, email, name) values ('550e8400-e29b-41d4-a716-446655440000', 'local@example.com', 'Local User') on conflict (id) do nothing;"
 ```
 
 Worker スタブの単発実行:
