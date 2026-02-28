@@ -27,9 +27,9 @@ export async function GET(request: Request, { params }: Params) {
       },
       select: {
         id: true,
+        documentId: true,
         status: true,
-        errorMessage: true,
-        updatedAt: true
+        errorMessage: true
       }
     });
 
@@ -39,10 +39,10 @@ export async function GET(request: Request, { params }: Params) {
 
     return NextResponse.json(
       {
-        jobId: job.id,
+        job_id: job.id,
+        document_id: job.documentId,
         status: job.status,
-        errorMessage: job.errorMessage,
-        updatedAt: job.updatedAt
+        error_message: job.errorMessage
       },
       { status: 200 }
     );
@@ -51,6 +51,7 @@ export async function GET(request: Request, { params }: Params) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
+    console.error("[GET /api/jobs/[jobId]] Unexpected error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }

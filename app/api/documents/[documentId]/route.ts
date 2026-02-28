@@ -25,9 +25,9 @@ export async function GET(request: Request, { params }: Params) {
       },
       select: {
         id: true,
+        userId: true,
         filePath: true,
-        createdAt: true,
-        updatedAt: true
+        createdAt: true
       }
     });
 
@@ -35,12 +35,21 @@ export async function GET(request: Request, { params }: Params) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
 
-    return NextResponse.json(document, { status: 200 });
+    return NextResponse.json(
+      {
+        id: document.id,
+        user_id: document.userId,
+        file_path: document.filePath,
+        created_at: document.createdAt
+      },
+      { status: 200 }
+    );
   } catch (error) {
     if (error instanceof UnauthorizedError) {
       return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
+    console.error("[GET /api/documents/[documentId]] Unexpected error:", error);
     return NextResponse.json({ error: "internal_error" }, { status: 500 });
   }
 }
