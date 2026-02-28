@@ -72,6 +72,33 @@ npm run prisma:migrate:dev
 npm run dev
 ```
 
+## Docker での擬似起動
+
+ローカルで `web + PostgreSQL` を Docker Compose でまとめて起動できます。
+現時点の Worker はスタブのため、常駐ではなく単発実行で確認します。
+
+```bash
+docker compose build
+docker compose up -d db
+docker compose run --rm web npx prisma migrate deploy --schema packages/db/prisma/schema.prisma
+docker compose up web
+```
+
+別ターミナルで初期ユーザーを投入すると API 確認がしやすくなります。
+
+```bash
+docker compose exec db psql -U postgres -d ocrwebapp -c \
+  "insert into users (id, email, name) values ('550e8400-e29b-41d4-a716-446655440000', 'local@example.com', 'Local User') on conflict (id) do nothing;"
+```
+
+Worker スタブの単発実行:
+
+```bash
+docker compose run --rm worker
+```
+
+詳細は [docs/operations/20260228-local-docker-pseudo-run.md](./docs/operations/20260228-local-docker-pseudo-run.md) を参照してください。
+
 ## テスト
 
 ```bash
