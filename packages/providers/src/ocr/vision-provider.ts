@@ -11,10 +11,7 @@ export class GoogleVisionOCRProvider implements OCRProvider {
   async extractText(imageUrl: string): Promise<OCRResult> {
     const [result] = await this.client.annotateImage({
       image: { source: { imageUri: imageUrl } },
-      features: [
-        { type: "TEXT_DETECTION" },
-        { type: "DOCUMENT_TEXT_DETECTION" }
-      ]
+      features: [{ type: "DOCUMENT_TEXT_DETECTION" }]
     });
 
     const fullText = result.fullTextAnnotation?.text ?? "";
