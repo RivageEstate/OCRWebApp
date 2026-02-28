@@ -11,7 +11,7 @@ type Params = {
 
 export async function GET(request: Request, { params }: Params) {
   try {
-    const userId = requireUserId(request);
+    const userId = await requireUserId(request);
     const { documentId } = await params;
 
     if (!isValidUuid(documentId)) {

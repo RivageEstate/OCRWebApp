@@ -1,41 +1,36 @@
-import { describe, expect, it } from "vitest";
-import { requireUserId, UnauthorizedError } from "@web/lib/auth/session";
+import { describe, expect, it, vi } from "vitest";
 
 const VALID_UUID = "9f4e4a5f-7a4d-4a7f-b006-9225f39ae4d8";
 
-function makeRequest(headers: Record<string, string>): Request {
-  return new Request("http://localhost/test", { headers });
+const mockAuth = vi.fn();
+
+// auth() をモック（ホイスティングが必要なので vi.mock は最上位で呼ぶ）
+vi.mock("@/auth", () => ({
+  auth: mockAuth
+}));
+
+// モック後にインポート
+const { requireUserId, UnauthorizedError } = await import("@web/lib/auth/session");
+
+function makeRequest(): Request {
+  return new Request("http://localhost/test");
 }
 
-describe("requireUserId", () => {
-  it("returns userId for valid UUID in x-user-id header", () => {
-    const request = makeRequest({ "x-user-id": VALID_UUID });
-    expect(requireUserId(request)).toBe(VALID_UUID);
+describe("requireUserId (NextAuth)", () => {
+  it("returns userId when session has userId", async () => {
+    mockAuth.mockResolvedValueOnce({ userId: VALID_UUID });
+    const result = await requireUserId(makeRequest());
+    expect(result).toBe(VALID_UUID);
   });
 
-  it("strips surrounding whitespace before validating", () => {
-    const request = makeRequest({ "x-user-id": `  ${VALID_UUID}  ` });
-    expect(requireUserId(request)).toBe(VALID_UUID);
+  it("throws UnauthorizedError when session is null", async () => {
+    mockAuth.mockResolvedValueOnce(null);
+    await expect(requireUserId(makeRequest())).rejects.toThrow(UnauthorizedError);
   });
 
-  it("throws UnauthorizedError when x-user-id header is missing", () => {
-    const request = makeRequest({});
-    expect(() => requireUserId(request)).toThrow(UnauthorizedError);
-  });
-
-  it("throws UnauthorizedError when x-user-id is not a valid UUID", () => {
-    const request = makeRequest({ "x-user-id": "not-a-uuid" });
-    expect(() => requireUserId(request)).toThrow(UnauthorizedError);
-  });
-
-  it("throws UnauthorizedError when x-user-id is empty string", () => {
-    const request = makeRequest({ "x-user-id": "" });
-    expect(() => requireUserId(request)).toThrow(UnauthorizedError);
-  });
-
-  it("throws UnauthorizedError when x-user-id is whitespace only", () => {
-    const request = makeRequest({ "x-user-id": "   " });
-    expect(() => requireUserId(request)).toThrow(UnauthorizedError);
+  it("throws UnauthorizedError when userId is missing from session", async () => {
+    mockAuth.mockResolvedValueOnce({ user: { email: "test@example.com" } });
+    await expect(requireUserId(makeRequest())).rejects.toThrow(UnauthorizedError);
   });
 });
 

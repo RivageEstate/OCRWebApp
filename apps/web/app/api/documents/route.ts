@@ -14,7 +14,7 @@ const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024; // 20MB (OpenAPI spec)
 
 export async function POST(request: Request) {
   try {
-    const userId = requireUserId(request);
+    const userId = await requireUserId(request);
     const formData = await request.formData();
     const file = formData.get("file");
 

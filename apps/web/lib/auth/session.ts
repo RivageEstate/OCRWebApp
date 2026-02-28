@@ -1,4 +1,4 @@
-import { isValidUuid } from "@ocrwebapp/domain";
+import { auth } from "@/auth";
 
 export class UnauthorizedError extends Error {
   constructor(message = "Unauthorized") {
@@ -7,12 +7,10 @@ export class UnauthorizedError extends Error {
   }
 }
 
-// Temporary auth adapter for initial API development.
-// Replace this with NextAuth session integration in the next step.
-export function requireUserId(request: Request): string {
-  const userId = request.headers.get("x-user-id")?.trim();
-  if (!userId || !isValidUuid(userId)) {
+export async function requireUserId(_request: Request): Promise<string> {
+  const session = await auth();
+  if (!session?.userId) {
     throw new UnauthorizedError();
   }
-  return userId;
+  return session.userId;
 }
