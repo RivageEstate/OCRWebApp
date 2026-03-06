@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: OCRWebApp Phase 0 API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Phase 0 API契約。
-    対象: documents作成、jobs状態参照、document参照、properties編集。
+    対象: documents作成、jobs状態参照、document参照、properties編集・エクスポート。
 servers:
   - url: https://example.com
 tags:
@@ -81,12 +81,11 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "404":
           $ref: "#/components/responses/NotFound"
-  /api/properties/{propertyId}:
-    put:
+  /api/properties/{propertyId}/export:
+    get:
       tags:
         - properties
-      summary: 正規化データ部分更新
-      description: 指定したpropertyを更新し、revisionに差分を記録する。
+      summary: 正規化データをCSV/PDF形式でエクスポート
       security:
         - sessionAuth: []
       parameters:
@@ -96,19 +95,24 @@ paths:
           schema:
             type: string
             format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdatePropertyRequest"
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [csv, pdf]
       responses:
         "200":
-          description: 更新成功
+          description: ダウンロード成功
           content:
-            application/json:
+            text/csv:
               schema:
-                $ref: "#/components/schemas/NormalizedProperty"
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
