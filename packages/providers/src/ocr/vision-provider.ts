@@ -8,7 +8,7 @@ export class GoogleVisionOCRProvider implements OCRProvider {
     this.client = new vision.ImageAnnotatorClient();
   }
 
-  async extractText(imageUrl: string): Promise<OCRResult> {
+  async extractText(imageUrl: string, _options?: { signal?: AbortSignal }): Promise<OCRResult> {
     const [result] = await this.client.annotateImage({
       image: { source: { imageUri: imageUrl } },
       features: [{ type: "DOCUMENT_TEXT_DETECTION" }]

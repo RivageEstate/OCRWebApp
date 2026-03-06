@@ -1,7 +1,7 @@
 import type { Extractor, NormalizedFields } from "@ocrwebapp/domain";
 
 export class StubExtractor implements Extractor {
-  async extract(_rawText: string): Promise<NormalizedFields> {
+  async extract(_rawText: string, _options?: { signal?: AbortSignal }): Promise<NormalizedFields> {
     return {
       propertyName: null,
       address: null,
