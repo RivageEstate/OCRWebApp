@@ -3,7 +3,7 @@
 - Title: デプロイ・開発実行・利用ガイド / Deployment, Development, and Usage Guide
 - Status: Draft
 - Created: 2026-02-28
-- Last Updated: 2026-02-28
+- Last Updated: 2026-03-07
 - Owner: Repository Maintainers
 - Language: JA/EN
 
@@ -17,13 +17,13 @@ Phase 0 の現状実装を前提に、ローカル実行手順、想定デプロ
 - `apps/worker`: Cloud Run 配備を想定した Worker
 - `packages/db`: Prisma schema / migration
 
-このガイドは 2026-02-28 時点の実装に基づく。現時点では以下を前提とする。
+このガイドは 2026-03-07 時点の実装に基づく。現時点では以下を前提とする。
 
-- UI はトップページの最小表示のみ
-- API は `POST /api/documents` `GET /api/jobs/{jobId}` `GET /api/documents/{documentId}` の雛形のみ
-- 認証は暫定的に `x-user-id` ヘッダー（UUID）で代替
+- UI は upload / job status / document edit / export の最短導線まで実装済み
+- API は `POST /api/documents` `GET /api/jobs/{jobId}` `GET /api/documents/{documentId}` `PUT /api/properties/{propertyId}` `GET /api/properties/{propertyId}/export` を提供する
+- 認証は NextAuth セッションを前提とする
 - Storage はローカルスタブ実装
-- Worker はジョブ受信ログを出すスタブ実装
+- Worker は OCR/LLM 抽出と `extractions` / `normalized_properties` 保存を実行する
 
 ## ローカル実行 / Local Development
 
@@ -55,7 +55,7 @@ npm run prisma:generate
 npm run prisma:migrate:dev
 ```
 
-必要に応じて、テスト用ユーザーを `users` テーブルへ事前投入する。API は `x-user-id` に指定した UUID が `users.id` に存在する前提で動作する。
+必要に応じて、認証時に利用するユーザーを `users` テーブルへ事前投入する。NextAuth ログイン時に `users` は upsert されるため、ローカルでは Google 認証の設定またはセッション取得手段が必要である。
 
 例:
 
@@ -91,7 +91,7 @@ node apps/worker/dist/main.js
 
 期待結果:
 
-- 標準出力に `phase0 job received (stub)` が出る
+- 標準出力に `phase0 job started` とジョブ更新ログが出る
 
 ## 利用方法 / How to Use
 
@@ -101,11 +101,7 @@ node apps/worker/dist/main.js
 
 ### 2. 文書アップロード API / Create Document via API
 
-```bash
-curl -X POST http://localhost:3000/api/documents \
-  -H 'x-user-id: 11111111-1111-1111-1111-111111111111' \
-  -F 'file=@/path/to/sample.jpg'
-```
+ブラウザでログインしたセッションから `/upload` を利用する。
 
 期待結果:
 
@@ -120,21 +116,11 @@ curl -X POST http://localhost:3000/api/documents \
 
 ### 3. ジョブ状態確認 / Check Job Status
 
-```bash
-curl http://localhost:3000/api/jobs/<job_id> \
-  -H 'x-user-id: 11111111-1111-1111-1111-111111111111'
-```
-
-現時点では Worker が DB の `jobs.status` を更新しないため、通常は `queued` のままとなる。
+ジョブ画面 `/jobs/<job_id>` で 2 秒間隔ポーリングが行われる。Worker 実行後は `queued|processing|succeeded|failed` が反映される。
 
 ### 4. 文書参照 / Fetch Document Metadata
 
-```bash
-curl http://localhost:3000/api/documents/<document_id> \
-  -H 'x-user-id: 11111111-1111-1111-1111-111111111111'
-```
-
-文書作成者本人の `x-user-id` を指定した場合のみ取得できる。
+文書編集画面 `/documents/<document_id>/edit` では、最新の OCR 生データと確定データを並行して扱える。編集保存後は `revisions` に差分が保存される。
 
 ## デプロイ方法 / Deployment
 

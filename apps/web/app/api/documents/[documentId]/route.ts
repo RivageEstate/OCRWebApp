@@ -38,6 +38,17 @@ export async function GET(request: Request, { params }: Params) {
           take: 1,
           orderBy: { createdAt: "desc" }
         },
+        extractions: {
+          select: {
+            id: true,
+            rawText: true,
+            ocrProvider: true,
+            extractorVersion: true,
+            createdAt: true
+          },
+          take: 1,
+          orderBy: { createdAt: "desc" }
+        },
         normalizedProperties: {
           select: {
             id: true,
@@ -63,6 +74,7 @@ export async function GET(request: Request, { params }: Params) {
     }
 
     const latestJob = document.jobs[0] ?? null;
+    const latestExtraction = document.extractions[0] ?? null;
     const property = document.normalizedProperties[0] ?? null;
 
     return NextResponse.json(
@@ -77,6 +89,15 @@ export async function GET(request: Request, { params }: Params) {
               status: latestJob.status,
               error_message: latestJob.errorMessage,
               updated_at: latestJob.updatedAt
+            }
+          : null,
+        latest_extraction: latestExtraction
+          ? {
+              extraction_id: latestExtraction.id,
+              raw_text: latestExtraction.rawText,
+              ocr_provider: latestExtraction.ocrProvider,
+              extractor_version: latestExtraction.extractorVersion,
+              created_at: latestExtraction.createdAt
             }
           : null,
         normalized_property: property

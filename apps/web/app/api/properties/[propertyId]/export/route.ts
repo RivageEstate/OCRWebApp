@@ -75,19 +75,26 @@ type PropertyData = {
   updatedAt: Date;
 };
 
+const EXPORT_FIELDS: Array<{ label: string; value: (property: PropertyData) => string }> = [
+  { label: "物件名", value: (property) => property.propertyName ?? "" },
+  { label: "住所", value: (property) => property.address ?? "" },
+  { label: "価格（万円）", value: (property) => property.price != null ? String(property.price) : "" },
+  { label: "賃料（万円）", value: (property) => property.rent != null ? String(property.rent) : "" },
+  { label: "利回り（%）", value: (property) => property.yield != null ? String(property.yield) : "" },
+  { label: "構造", value: (property) => property.structure ?? "" },
+  { label: "築年", value: (property) => property.builtYear ?? "" },
+  { label: "最寄り駅", value: (property) => property.stationInfo ?? "" },
+  { label: "更新日時", value: (property) => property.updatedAt.toISOString() }
+];
+
+function buildExportFilename(property: PropertyData, extension: "csv" | "pdf"): string {
+  const datePart = property.updatedAt.toISOString().slice(0, 10).replace(/-/g, "");
+  return `property_${property.id}_${datePart}.${extension}`;
+}
+
 function exportCsv(property: PropertyData): Response {
   const headers = ["項目", "値"];
-  const rows: [string, string][] = [
-    ["物件名", property.propertyName ?? ""],
-    ["住所", property.address ?? ""],
-    ["価格（万円）", property.price != null ? String(property.price) : ""],
-    ["賃料（万円）", property.rent != null ? String(property.rent) : ""],
-    ["利回り（%）", property.yield != null ? String(property.yield) : ""],
-    ["構造", property.structure ?? ""],
-    ["築年", property.builtYear ?? ""],
-    ["最寄り駅", property.stationInfo ?? ""],
-    ["更新日時", property.updatedAt.toISOString()],
-  ];
+  const rows: [string, string][] = EXPORT_FIELDS.map(({ label, value }) => [label, value(property)]);
 
   const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const csvLines = [
@@ -103,7 +110,7 @@ function exportCsv(property: PropertyData): Response {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="property_${property.id}.csv"`,
+      "Content-Disposition": `attachment; filename="${buildExportFilename(property, "csv")}"`,
     }
   });
 }
@@ -121,7 +128,7 @@ function exportPdf(property: PropertyData): Promise<Response> {
           status: 200,
           headers: {
             "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename="property_${property.id}.pdf"`,
+            "Content-Disposition": `attachment; filename="${buildExportFilename(property, "pdf")}"`,
           }
         })
       );
@@ -132,16 +139,7 @@ function exportPdf(property: PropertyData): Promise<Response> {
     doc.fontSize(18).text("物件概要", { align: "center" });
     doc.moveDown();
 
-    const fields: [string, string][] = [
-      ["物件名", property.propertyName ?? "-"],
-      ["住所", property.address ?? "-"],
-      ["価格（万円）", property.price != null ? String(property.price) : "-"],
-      ["賃料（万円）", property.rent != null ? String(property.rent) : "-"],
-      ["利回り（%）", property.yield != null ? String(property.yield) : "-"],
-      ["構造", property.structure ?? "-"],
-      ["築年", property.builtYear ?? "-"],
-      ["最寄り駅", property.stationInfo ?? "-"],
-    ];
+    const fields: [string, string][] = EXPORT_FIELDS.map(({ label, value }) => [label, value(property) || "-"]);
 
     for (const [label, value] of fields) {
       doc.fontSize(10).text(`${label}: ${value}`, { continued: false });

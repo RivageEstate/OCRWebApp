@@ -118,12 +118,12 @@ export async function PUT(request: Request, { params }: Params) {
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
     }
+
     const validationError = validateBody(body);
     if (validationError) {
       return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
-    // 所有者検証: property → document → user
     const existing = await prisma.normalizedProperty.findFirst({
       where: {
         id: propertyId,
@@ -145,15 +145,15 @@ export async function PUT(request: Request, { params }: Params) {
     });
 
     if (!existing) {
-      // 所有者以外 or 存在しない → 403/404 を区別しない（情報漏洩防止）
-      const exists = await prisma.normalizedProperty.findUnique({ where: { id: propertyId }, select: { id: true } });
+      const exists = await prisma.normalizedProperty.findUnique({
+        where: { id: propertyId },
+        select: { id: true }
+      });
       return NextResponse.json({ error: exists ? "forbidden" : "not_found" }, { status: exists ? 403 : 404 });
     }
 
-    // before: 現在の値をスナップショット
     const before = toSnapshot(existing);
 
-    // 更新データを構築（undefinedのフィールドは更新しない）
     const updateData: Record<string, unknown> = {};
     if ("property_name" in body && body.property_name !== before.property_name) {
       updateData.propertyName = body.property_name;
@@ -205,7 +205,6 @@ export async function PUT(request: Request, { params }: Params) {
       );
     }
 
-    // normalized_properties 更新 + revision 作成をトランザクションで実行
     const updated = await prisma.$transaction(async (tx) => {
       const prop = await tx.normalizedProperty.update({
         where: { id: propertyId },
@@ -214,14 +213,16 @@ export async function PUT(request: Request, { params }: Params) {
 
       const after = toSnapshot(prop);
 
-      await tx.revision.create({
-        data: {
-          propertyId,
-          changedBy: userId,
-          before,
-          after
-        }
-      });
+      if (JSON.stringify(before) !== JSON.stringify(after)) {
+        await tx.revision.create({
+          data: {
+            propertyId,
+            changedBy: userId,
+            before,
+            after
+          }
+        });
+      }
 
       return prop;
     });

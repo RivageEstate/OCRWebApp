@@ -24,7 +24,7 @@ describe("GET /api/documents/[documentId]", () => {
     mockRequireUserId.mockResolvedValue("11111111-1111-1111-1111-111111111111");
   });
 
-  it("returns the latest job together with normalized property data", async () => {
+  it("returns the latest job, extraction, and normalized property", async () => {
     mockPrisma.document.findFirst.mockResolvedValue({
       id: "doc-1",
       userId: "11111111-1111-1111-1111-111111111111",
@@ -32,10 +32,19 @@ describe("GET /api/documents/[documentId]", () => {
       createdAt: new Date("2026-03-07T00:00:00Z"),
       jobs: [
         {
-          id: "22222222-2222-4222-8222-222222222222",
-          status: "queued",
+          id: "job-1",
+          status: "succeeded",
           errorMessage: null,
           updatedAt: new Date("2026-03-07T00:01:00Z")
+        }
+      ],
+      extractions: [
+        {
+          id: "ext-1",
+          rawText: "OCR raw text",
+          ocrProvider: "StubOCRProvider",
+          extractorVersion: "v1",
+          createdAt: new Date("2026-03-07T00:01:30Z")
         }
       ],
       normalizedProperties: [
@@ -67,10 +76,17 @@ describe("GET /api/documents/[documentId]", () => {
       file_path: "stub/sample.pdf",
       created_at: "2026-03-07T00:00:00.000Z",
       latest_job: {
-        job_id: "22222222-2222-4222-8222-222222222222",
-        status: "queued",
+        job_id: "job-1",
+        status: "succeeded",
         error_message: null,
         updated_at: "2026-03-07T00:01:00.000Z"
+      },
+      latest_extraction: {
+        extraction_id: "ext-1",
+        raw_text: "OCR raw text",
+        ocr_provider: "StubOCRProvider",
+        extractor_version: "v1",
+        created_at: "2026-03-07T00:01:30.000Z"
       },
       normalized_property: {
         id: "prop-1",

@@ -9,7 +9,7 @@
 
 ## 背景 / Background
 
-Phase 0 の実装対象は、非同期ジョブ実行、外部依存（OCR/LLM/Storage）、編集可能データと履歴管理を含む。  
+Phase 0 の実装対象は、非同期ジョブ実行、外部依存（OCR/LLM/Storage）、編集可能データと履歴管理、CSV/PDF出力を含む。  
 実装開始後にテスト方針を決めると、責務分離と抽象インターフェース設計に手戻りが出やすい。
 
 ## 目的 / Objective
@@ -30,7 +30,7 @@ Phase 0 の実装対象は、非同期ジョブ実行、外部依存（OCR/LLM/S
 1. テストレイヤー
 
 - Unit: ドメインロジックとバリデーションを対象とし、DB/外部APIに依存しない。
-- Integration: API + DB + 認可を対象とし、Repository経由で永続化結果を検証する。
+- Integration: API Route / Worker / 認可を対象とし、DBと外部依存はテストダブルで整合性を検証する。
 - E2E: 主要ユーザーフロー（アップロードから状態確認まで）の疎通確認に限定する。
 
 1. 外部依存の扱い
@@ -44,6 +44,7 @@ Phase 0 の実装対象は、非同期ジョブ実行、外部依存（OCR/LLM/S
 - `POST /api/documents` 実行時に `jobs.status=queued` が作成されること。
 - Worker 実行時に `queued -> processing -> succeeded|failed` が遷移すること。
 - 失敗時に `error_message` が記録され、APIから参照できること。
+- export API が所有者のみ成功すること。
 
 1. Phase 0 必須テストケース（最小）
 
@@ -52,6 +53,7 @@ Phase 0 の実装対象は、非同期ジョブ実行、外部依存（OCR/LLM/S
 - Document API: 所有者のみ参照可能で、他ユーザーは拒否される。
 - API層制約: APIリクエスト中に OCR/LLM 同期実行を行わない。
 - Revision記録: 主要項目の編集で `revisions` に before/after と変更者が記録される。
+- Export API: 所有者のみ CSV/PDF を出力できる。
 
 ## 非スコープ / Out of Scope
 
