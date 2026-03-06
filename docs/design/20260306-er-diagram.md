@@ -5,9 +5,9 @@
 - Created: 2026-03-06
 - Last Updated: 2026-03-06
 - Owner: keikur1hara
-- Language: JA
+- Language: JA/EN
 
-## ER図
+## エンティティ関係図
 
 ```mermaid
 erDiagram
@@ -109,3 +109,19 @@ users
 
 - Prismaスキーマ: `packages/db/prisma/schema.prisma`
 - システムアーキテクチャ: `docs/design/20260225-system-architecture.md`
+
+## 概要 / Summary (JA)
+
+全6テーブル（users / documents / extractions / normalized_properties / revisions / jobs）の関係を定義する。UUID主キー・JSONB活用・FK制約・インデックス設計を方針として固定し、生OCRデータと確定済み編集可能データを分離することを原則とする。
+
+## Summary (EN)
+
+Defines the relationships among all six tables: users, documents, extractions, normalized_properties, revisions, and jobs. Key design constraints include UUID primary keys, JSONB usage, FK constraints with index coverage, and strict separation of raw OCR data from confirmed normalized data.
+
+## 結論 / Conclusion (JA)
+
+本ER図を基準として実装・マイグレーションを進める。スキーマ変更時は Prismaマイグレーションを作成し、本ドキュメントを同一PRで更新する。
+
+## Conclusion (EN)
+
+Implementation and migrations should follow this ER diagram as the baseline. Schema changes require a Prisma migration and an update to this document in the same PR.

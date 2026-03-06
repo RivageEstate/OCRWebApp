@@ -5,7 +5,7 @@
 - Created: 2026-03-06
 - Last Updated: 2026-03-06
 - Owner: keikur1hara
-- Language: JA
+- Language: JA/EN
 
 ## 1. アップロード & ジョブ作成フロー
 
@@ -110,3 +110,19 @@ sequenceDiagram
 - システムアーキテクチャ: `docs/design/20260225-system-architecture.md`
 - Job状態遷移: `docs/design/20260306-job-state-machine.md`
 - API仕様: `contracts/openapi/phase0.yaml`
+
+## 概要 / Summary (JA)
+
+Phase 0 の3つの主要フロー（アップロード & ジョブ作成 / Worker非同期処理 / ジョブステータスポーリング）をMermaidシーケンス図で定義する。APIレイヤーでOCR/LLMを同期実行しないことを図で明示する。
+
+## Summary (EN)
+
+Defines the three main flows of Phase 0 — upload & job creation, Worker async processing, and job status polling — as Mermaid sequence diagrams. The diagrams explicitly show that OCR/LLM must not be executed synchronously in the API layer.
+
+## 結論 / Conclusion (JA)
+
+本シーケンス図を実装の基準とし、フロー変更時は同一PRで更新する。
+
+## Conclusion (EN)
+
+This sequence diagram serves as the implementation baseline. Any flow changes must be reflected in this document within the same PR.

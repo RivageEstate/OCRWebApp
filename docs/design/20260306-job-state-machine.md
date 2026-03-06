@@ -5,7 +5,7 @@
 - Created: 2026-03-06
 - Last Updated: 2026-03-06
 - Owner: keikur1hara
-- Language: JA
+- Language: JA/EN
 
 ## 状態遷移図
 
@@ -57,3 +57,19 @@ stateDiagram-v2
 - 状態定義コード: `packages/domain/src/jobs/status.ts`
 - シーケンス図: `docs/design/20260306-sequence-diagrams.md`
 - API仕様: `contracts/openapi/phase0.yaml`
+
+## 概要 / Summary (JA)
+
+Jobの状態遷移（queued → processing → succeeded / failed）をMermaid図と遷移ルール・タイムアウト・UI対応表で定義する。終端状態からの再遷移は禁止し、再処理には新規Job作成を要求する。
+
+## Summary (EN)
+
+Defines the Job state machine (queued → processing → succeeded / failed) with a Mermaid diagram, transition rules, timeout settings, and UI behavior mapping. Re-transitions from terminal states are prohibited; reprocessing requires creating a new Job.
+
+## 結論 / Conclusion (JA)
+
+本状態遷移図を実装の基準とし、遷移ルール変更時は同一PRで更新する。
+
+## Conclusion (EN)
+
+This state machine diagram serves as the implementation baseline. Any changes to transition rules must be reflected in this document within the same PR.
