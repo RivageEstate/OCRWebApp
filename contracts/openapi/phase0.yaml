@@ -1,15 +1,16 @@
 openapi: 3.0.3
 info:
   title: OCRWebApp Phase 0 API
-  version: 0.1.0
+  version: 0.3.0
   description: |
-    Phase 0 初手で実装する最小API契約。
-    対象: documents作成、jobs状態参照、document参照。
+    Phase 0 API契約。
+    対象: documents作成、jobs状態参照、document参照、properties編集・エクスポート。
 servers:
   - url: https://example.com
 tags:
   - name: documents
   - name: jobs
+  - name: properties
 paths:
   /api/documents:
     post:
@@ -78,6 +79,50 @@ paths:
                 $ref: "#/components/schemas/JobStatusResponse"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/properties/{propertyId}/export:
+    get:
+      tags:
+        - properties
+      summary: 正規化データをCSV/PDF形式でエクスポート
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [csv, pdf]
+      responses:
+        "200":
+          description: ダウンロード成功
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: 所有者以外のアクセス
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           $ref: "#/components/responses/NotFound"
   /api/documents/{documentId}:
