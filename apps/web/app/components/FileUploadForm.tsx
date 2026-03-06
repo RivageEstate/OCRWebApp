@@ -7,20 +7,17 @@ export function FileUploadForm() {
   const router = useRouter();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   async function handleFileUpload(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = event.currentTarget;
-    const fileInput = form.elements.namedItem('file') as HTMLInputElement;
-    const file = fileInput.files?.[0];
-
-    if (!file) return;
+    if (!selectedFile) return;
 
     setIsUploading(true);
     setUploadError(null);
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', selectedFile);
 
     try {
       const response = await fetch('/api/documents', {
@@ -50,6 +47,7 @@ export function FileUploadForm() {
         accept="image/jpeg,image/png,image/webp,application/pdf"
         hidden
         disabled={isUploading}
+        onChange={(e) => setSelectedFile(e.target.files?.[0] ?? null)}
       />
 
       <label
@@ -63,22 +61,27 @@ export function FileUploadForm() {
               <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" fill="none" />
             </svg>
           ) : (
-            <span aria-hidden="true">📤 ファイルをドロップまたは選択</span>
+            <span aria-hidden="true">📤 クリックしてファイルを選択</span>
           )}
         </div>
 
         {!isUploading && (
-          <>
-            <p className="mb-1">最大 20MB<br />JPG, PNG, WebP, PDF 対応</p>
-            <button
-              type="submit"
-              className="mt-4 bg-primary text-white py-1.5 px-3 rounded-md text-sm font-medium transition-colors hover:bg-primary/90"
-            >
-              アップロード
-            </button>
-          </>
+          <p className="mb-1">最大 20MB<br />JPG, PNG, WebP, PDF 対応</p>
+        )}
+
+        {selectedFile && !isUploading && (
+          <p className="mt-2 text-sm font-medium text-foreground truncate max-w-xs">{selectedFile.name}</p>
         )}
       </label>
+
+      {selectedFile && !isUploading && (
+        <button
+          type="submit"
+          className="mt-4 w-full bg-primary text-white py-2 px-3 rounded-md text-sm font-medium transition-colors hover:bg-primary/90"
+        >
+          アップロード
+        </button>
+      )}
 
       {uploadError && (
         <div className="mt-4 rounded-md bg-destructive text-white p-3 flex gap-2 items-start font-mono text-sm" role="alert">

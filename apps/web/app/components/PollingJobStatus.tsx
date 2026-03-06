@@ -17,11 +17,14 @@ export function PollingJobStatus({ jobId }: { jobId: string }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const controller = new AbortController();
     let intervalId: ReturnType<typeof setInterval> | null = null;
 
     async function fetchJobStatus() {
       try {
-        const response = await fetch(`/api/jobs/${jobId}`);
+        const response = await fetch(`/api/jobs/${jobId}`, {
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           const data = await response.json().catch(() => ({}));
@@ -36,6 +39,7 @@ export function PollingJobStatus({ jobId }: { jobId: string }) {
           intervalId = null;
         }
       } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') return;
         setError(err instanceof Error ? err.message : 'ジョブ情報の取得に失敗しました');
         if (intervalId) {
           clearInterval(intervalId);
@@ -48,6 +52,7 @@ export function PollingJobStatus({ jobId }: { jobId: string }) {
     intervalId = setInterval(fetchJobStatus, POLL_INTERVAL_MS);
 
     return () => {
+      controller.abort();
       if (intervalId) clearInterval(intervalId);
     };
   }, [jobId]);
