@@ -192,7 +192,7 @@ interface StorageAdapter {
 
 ```ts
 interface OCRProvider {
-  extractText(imageUrl: string): Promise<OCRResult>;
+  extractText(imageUrl: string, options?: { signal?: AbortSignal }): Promise<OCRResult>;
 }
 ```
 
@@ -204,7 +204,7 @@ interface OCRProvider {
 
 ```ts
 interface Extractor {
-  extract(rawText: string): Promise<NormalizedFields>;
+  extract(rawText: string, options?: { signal?: AbortSignal }): Promise<NormalizedFields>;
 }
 ```
 
@@ -234,7 +234,8 @@ interface Extractor {
 3. APIで同期OCRが実行されない。
 4. 認証済みユーザーのみ自分のDocumentへアクセスできる。
 5. 編集差分が `revisions` に記録される。
-6. 東京リージョン統一方針に反しない構成でデプロイできる。
+6. 確定データを CSV / PDF で出力できる。
+7. 東京リージョン統一方針に反しない構成でデプロイできる。
 
 ## 11. 関連ドキュメント
 
