@@ -1,17 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { runWithTimeout } from "../../apps/worker/src/processors/phase0";
 
 // リトライ・タイムアウトのロジックをテストするためのヘルパー関数
 // (processPhase0Job はDB依存のため、内部ロジックを単体でテスト)
 
 const MAX_RETRIES = 3;
-const TIMEOUT_MS = 300_000;
-
-function timeoutReject(ms: number): Promise<never> {
-  return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms)
-  );
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
@@ -113,17 +106,38 @@ describe("タイムアウトロジック", () => {
     vi.useFakeTimers();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("タイムアウト前に完了した場合は正常終了", async () => {
-    const fastJob = Promise.resolve();
-    const result = Promise.race([fastJob, timeoutReject(TIMEOUT_MS)]);
-    vi.runAllTimers();
+    const result = runWithTimeout(async () => undefined, 1_000);
     await expect(result).resolves.toBeUndefined();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("タイムアウト後にrejectされる", async () => {
-    const neverResolves = new Promise<void>(() => {});
-    const result = Promise.race([neverResolves, timeoutReject(TIMEOUT_MS)]);
-    vi.advanceTimersByTime(TIMEOUT_MS + 1);
-    await expect(result).rejects.toThrow(`timeout after ${TIMEOUT_MS}ms`);
+    const result = runWithTimeout(() => new Promise<void>(() => {}), 100);
+    const assertion = expect(result).rejects.toThrow("timeout after 100ms");
+    await vi.advanceTimersByTimeAsync(101);
+    await assertion;
+  });
+
+  it("タイムアウト時に進行中ジョブへabortを通知する", async () => {
+    const onAbort = vi.fn();
+    const result = runWithTimeout(
+      async (signal) => new Promise<void>((_, reject) => {
+        signal.addEventListener("abort", () => {
+          onAbort(signal.reason);
+          reject(signal.reason);
+        }, { once: true });
+      }),
+      100
+    );
+
+    const assertion = expect(result).rejects.toThrow("timeout after 100ms");
+    await vi.advanceTimersByTimeAsync(101);
+    await assertion;
+    expect(onAbort).toHaveBeenCalledTimes(1);
   });
 });

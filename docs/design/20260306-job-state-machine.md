@@ -41,7 +41,8 @@ stateDiagram-v2
 ## タイムアウト
 
 - Worker 1ジョブあたりの実行タイムアウト: **300秒**
-- タイムアウト発生時は `failed` に遷移し `error_message: "timeout"` を記録する。
+- タイムアウト発生時は進行中の試行を中断し、その試行では `extractions` / `normalized_properties` を確定保存しない。
+- retry上限到達後は `failed` に遷移し、`error_message` に最終エラー（例: `timeout after 300000ms`）を記録する。
 
 ## UI のポーリング動作
 

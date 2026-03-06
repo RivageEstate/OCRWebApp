@@ -52,10 +52,10 @@ async function runWithRetry(
     }
 
     try {
-      await Promise.race([
-        runJob(documentId, filePath),
-        timeoutReject(TIMEOUT_MS)
-      ]);
+      await runWithTimeout(
+        (signal) => runJob(documentId, filePath, signal),
+        TIMEOUT_MS
+      );
 
       await prisma.job.update({
         where: { id: jobId },
@@ -84,49 +84,99 @@ async function runWithRetry(
   throw lastError;
 }
 
-async function runJob(documentId: string, filePath: string): Promise<void> {
+async function runJob(
+  documentId: string,
+  filePath: string,
+  signal: AbortSignal
+): Promise<void> {
+  throwIfAborted(signal);
+
   const storage = getStorageAdapter();
   const imageUrl = await storage.getSignedUrl(filePath);
+  throwIfAborted(signal);
 
   const ocrProvider = getOCRProvider();
-  const ocrResult = await ocrProvider.extractText(imageUrl);
-
-  const extraction = await prisma.extraction.create({
-    data: {
-      documentId,
-      rawText: ocrResult.raw_text,
-      ocrProvider: ocrProvider.constructor.name,
-      confidence: ocrResult.confidence != null ? ocrResult.confidence : null,
-      boundingBoxes: ocrResult.bounding_boxes ?? [],
-      extractorVersion: "v1"
-    }
-  });
-  console.log("[worker] extraction saved:", extraction.id);
+  const ocrResult = await ocrProvider.extractText(imageUrl, { signal });
+  throwIfAborted(signal);
 
   const extractor = getExtractor();
-  const normalized = await extractor.extract(ocrResult.raw_text);
+  const normalized = await extractor.extract(ocrResult.raw_text, { signal });
+  throwIfAborted(signal);
 
-  const property = await prisma.normalizedProperty.create({
-    data: {
-      documentId,
-      propertyName: normalized.propertyName as string | null ?? null,
-      address: normalized.address as string | null ?? null,
-      price: normalized.price as number | null ?? null,
-      rent: normalized.rent as number | null ?? null,
-      yield: normalized.yield as number | null ?? null,
-      structure: normalized.structure as string | null ?? null,
-      builtYear: normalized.builtYear as string | null ?? null,
-      stationInfo: normalized.stationInfo as string | null ?? null,
-      editableFields: normalized
-    }
+  const { extraction, property } = await prisma.$transaction(async (tx) => {
+    throwIfAborted(signal);
+
+    const extraction = await tx.extraction.create({
+      data: {
+        documentId,
+        rawText: ocrResult.raw_text,
+        ocrProvider: ocrProvider.constructor.name,
+        confidence: ocrResult.confidence != null ? ocrResult.confidence : null,
+        boundingBoxes: ocrResult.bounding_boxes ?? [],
+        extractorVersion: "v1"
+      }
+    });
+
+    throwIfAborted(signal);
+
+    const property = await tx.normalizedProperty.create({
+      data: {
+        documentId,
+        propertyName: normalized.propertyName as string | null ?? null,
+        address: normalized.address as string | null ?? null,
+        price: normalized.price as number | null ?? null,
+        rent: normalized.rent as number | null ?? null,
+        yield: normalized.yield as number | null ?? null,
+        structure: normalized.structure as string | null ?? null,
+        builtYear: normalized.builtYear as string | null ?? null,
+        stationInfo: normalized.stationInfo as string | null ?? null,
+        editableFields: normalized
+      }
+    });
+
+    return { extraction, property };
   });
+
   console.log("[worker] normalized property saved:", property.id);
+  console.log("[worker] extraction saved:", extraction.id);
 }
 
-function timeoutReject(ms: number): Promise<never> {
-  return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`timeout after ${ms}ms`)), ms)
-  );
+export async function runWithTimeout<T>(
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number
+): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    const controller = new AbortController();
+    const timeoutError = createTimeoutError(timeoutMs);
+    const timeoutId = setTimeout(() => {
+      controller.abort(timeoutError);
+      reject(timeoutError);
+    }, timeoutMs);
+
+    operation(controller.signal).then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
+      }
+    );
+  });
+}
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (!signal.aborted) {
+    return;
+  }
+
+  const reason = signal.reason;
+  throw reason instanceof Error ? reason : new Error("operation aborted");
+}
+
+function createTimeoutError(ms: number): Error {
+  return new Error(`timeout after ${ms}ms`);
 }
 
 function sleep(ms: number): Promise<void> {

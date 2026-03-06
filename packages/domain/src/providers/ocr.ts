@@ -4,7 +4,10 @@ export type OCRResult = {
   bounding_boxes?: unknown;
 };
 
-export interface OCRProvider {
-  extractText(imageUrl: string): Promise<OCRResult>;
-}
+export type ProviderCallOptions = {
+  signal?: AbortSignal;
+};
 
+export interface OCRProvider {
+  extractText(imageUrl: string, options?: ProviderCallOptions): Promise<OCRResult>;
+}
