@@ -28,6 +28,27 @@ export async function GET(request: Request, { params }: Params) {
         userId: true,
         filePath: true,
         createdAt: true,
+        jobs: {
+          select: {
+            id: true,
+            status: true,
+            errorMessage: true,
+            updatedAt: true
+          },
+          take: 1,
+          orderBy: { createdAt: "desc" }
+        },
+        extractions: {
+          select: {
+            id: true,
+            rawText: true,
+            ocrProvider: true,
+            extractorVersion: true,
+            createdAt: true
+          },
+          take: 1,
+          orderBy: { createdAt: "desc" }
+        },
         normalizedProperties: {
           select: {
             id: true,
@@ -52,6 +73,8 @@ export async function GET(request: Request, { params }: Params) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
 
+    const latestJob = document.jobs[0] ?? null;
+    const latestExtraction = document.extractions[0] ?? null;
     const property = document.normalizedProperties[0] ?? null;
 
     return NextResponse.json(
@@ -60,14 +83,31 @@ export async function GET(request: Request, { params }: Params) {
         user_id: document.userId,
         file_path: document.filePath,
         created_at: document.createdAt,
+        latest_job: latestJob
+          ? {
+              job_id: latestJob.id,
+              status: latestJob.status,
+              error_message: latestJob.errorMessage,
+              updated_at: latestJob.updatedAt
+            }
+          : null,
+        latest_extraction: latestExtraction
+          ? {
+              extraction_id: latestExtraction.id,
+              raw_text: latestExtraction.rawText,
+              ocr_provider: latestExtraction.ocrProvider,
+              extractor_version: latestExtraction.extractorVersion,
+              created_at: latestExtraction.createdAt
+            }
+          : null,
         normalized_property: property
           ? {
               id: property.id,
               property_name: property.propertyName,
               address: property.address,
-              price: property.price,
-              rent: property.rent,
-              yield: property.yield,
+              price: property.price != null ? Number(property.price) : null,
+              rent: property.rent != null ? Number(property.rent) : null,
+              yield: property.yield != null ? Number(property.yield) : null,
               structure: property.structure,
               built_year: property.builtYear,
               station_info: property.stationInfo,

@@ -21,6 +21,53 @@ type UpdateBody = {
   editable_fields?: Record<string, unknown>;
 };
 
+function isNullableString(value: unknown): value is string | null {
+  return value === null || typeof value === "string";
+}
+
+function isNullableNumber(value: unknown): value is number | null {
+  return value === null || (typeof value === "number" && Number.isFinite(value));
+}
+
+function validateBody(body: UpdateBody): string | null {
+  if ("property_name" in body && !isNullableString(body.property_name)) return "invalid_property_name";
+  if ("address" in body && !isNullableString(body.address)) return "invalid_address";
+  if ("price" in body && !isNullableNumber(body.price)) return "invalid_price";
+  if ("rent" in body && !isNullableNumber(body.rent)) return "invalid_rent";
+  if ("yield" in body && !isNullableNumber(body.yield)) return "invalid_yield";
+  if ("structure" in body && !isNullableString(body.structure)) return "invalid_structure";
+  if ("built_year" in body && !isNullableString(body.built_year)) return "invalid_built_year";
+  if ("station_info" in body && !isNullableString(body.station_info)) return "invalid_station_info";
+  if ("editable_fields" in body && (body.editable_fields == null || typeof body.editable_fields !== "object" || Array.isArray(body.editable_fields))) {
+    return "invalid_editable_fields";
+  }
+  return null;
+}
+
+function toSnapshot(source: {
+  propertyName: unknown;
+  address: unknown;
+  price: unknown;
+  rent: unknown;
+  yield: unknown;
+  structure: unknown;
+  builtYear: unknown;
+  stationInfo: unknown;
+  editableFields: unknown;
+}) {
+  return {
+    property_name: source.propertyName,
+    address: source.address,
+    price: source.price,
+    rent: source.rent,
+    yield: source.yield,
+    structure: source.structure,
+    built_year: source.builtYear,
+    station_info: source.stationInfo,
+    editable_fields: source.editableFields
+  };
+}
+
 export async function PUT(request: Request, { params }: Params) {
   try {
     const userId = await requireUserId(request);
@@ -33,6 +80,10 @@ export async function PUT(request: Request, { params }: Params) {
     const body: UpdateBody = await request.json().catch(() => null);
     if (!body || typeof body !== "object") {
       return NextResponse.json({ error: "invalid_body" }, { status: 400 });
+    }
+    const validationError = validateBody(body);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
 
     // 所有者検証: property → document → user
@@ -51,7 +102,8 @@ export async function PUT(request: Request, { params }: Params) {
         structure: true,
         builtYear: true,
         stationInfo: true,
-        editableFields: true
+        editableFields: true,
+        updatedAt: true
       }
     });
 
@@ -62,17 +114,7 @@ export async function PUT(request: Request, { params }: Params) {
     }
 
     // before: 現在の値をスナップショット
-    const before = {
-      property_name: existing.propertyName,
-      address: existing.address,
-      price: existing.price,
-      rent: existing.rent,
-      yield: existing.yield,
-      structure: existing.structure,
-      built_year: existing.builtYear,
-      station_info: existing.stationInfo,
-      editable_fields: existing.editableFields
-    };
+    const before = toSnapshot(existing);
 
     // 更新データを構築（undefinedのフィールドは更新しない）
     const updateData: Record<string, unknown> = {};
@@ -86,6 +128,25 @@ export async function PUT(request: Request, { params }: Params) {
     if ("station_info" in body) updateData.stationInfo = body.station_info;
     if ("editable_fields" in body) updateData.editableFields = body.editable_fields;
 
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json(
+        {
+          id: existing.id,
+          property_name: existing.propertyName,
+          address: existing.address,
+          price: existing.price,
+          rent: existing.rent,
+          yield: existing.yield,
+          structure: existing.structure,
+          built_year: existing.builtYear,
+          station_info: existing.stationInfo,
+          editable_fields: existing.editableFields,
+          updated_at: existing.updatedAt
+        },
+        { status: 200 }
+      );
+    }
+
     // normalized_properties 更新 + revision 作成をトランザクションで実行
     const updated = await prisma.$transaction(async (tx) => {
       const prop = await tx.normalizedProperty.update({
@@ -93,26 +154,18 @@ export async function PUT(request: Request, { params }: Params) {
         data: updateData
       });
 
-      const after = {
-        property_name: prop.propertyName,
-        address: prop.address,
-        price: prop.price,
-        rent: prop.rent,
-        yield: prop.yield,
-        structure: prop.structure,
-        built_year: prop.builtYear,
-        station_info: prop.stationInfo,
-        editable_fields: prop.editableFields
-      };
+      const after = toSnapshot(prop);
 
-      await tx.revision.create({
-        data: {
-          propertyId,
-          changedBy: userId,
-          before,
-          after
-        }
-      });
+      if (JSON.stringify(before) !== JSON.stringify(after)) {
+        await tx.revision.create({
+          data: {
+            propertyId,
+            changedBy: userId,
+            before,
+            after
+          }
+        });
+      }
 
       return prop;
     });
@@ -122,9 +175,9 @@ export async function PUT(request: Request, { params }: Params) {
         id: updated.id,
         property_name: updated.propertyName,
         address: updated.address,
-        price: updated.price,
-        rent: updated.rent,
-        yield: updated.yield,
+        price: updated.price != null ? Number(updated.price) : null,
+        rent: updated.rent != null ? Number(updated.rent) : null,
+        yield: updated.yield != null ? Number(updated.yield) : null,
         structure: updated.structure,
         built_year: updated.builtYear,
         station_info: updated.stationInfo,

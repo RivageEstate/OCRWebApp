@@ -12,6 +12,7 @@ export interface NormalizedProperty {
   structure: string | null;
   built_year: string | null;
   station_info: string | null;
+  editable_fields?: Record<string, unknown> | null;
   updated_at: string;
 }
 
@@ -89,11 +90,22 @@ export function PropertyEditForm({ property }: Props) {
         body: JSON.stringify(body),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? '保存に失敗しました');
       }
 
+      setValues({
+        property_name: data.property_name ?? '',
+        address: data.address ?? '',
+        price: data.price != null ? String(data.price) : '',
+        rent: data.rent != null ? String(data.rent) : '',
+        yield: data.yield != null ? String(data.yield) : '',
+        structure: data.structure ?? '',
+        built_year: data.built_year ?? '',
+        station_info: data.station_info ?? '',
+      });
       setSaveSuccess(true);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : '保存に失敗しました');
