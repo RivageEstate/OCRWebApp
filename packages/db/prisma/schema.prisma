@@ -101,6 +101,7 @@ model Job {
   documentId   String    @map("document_id") @db.Uuid
   status       JobStatus @default(queued)
   errorMessage String?   @map("error_message")
+  retryCount   Int       @default(0) @map("retry_count")
   createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
 
