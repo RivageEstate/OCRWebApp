@@ -1,6 +1,9 @@
 export type NormalizedFields = Record<string, unknown>;
 
-export interface Extractor {
-  extract(rawText: string): Promise<NormalizedFields>;
-}
+export type ExtractorCallOptions = {
+  signal?: AbortSignal;
+};
 
+export interface Extractor {
+  extract(rawText: string, options?: ExtractorCallOptions): Promise<NormalizedFields>;
+}

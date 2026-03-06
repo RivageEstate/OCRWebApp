@@ -26,7 +26,25 @@ export async function GET(request: Request, { params }: Params) {
       select: {
         id: true,
         userId: true,
-        createdAt: true
+        filePath: true,
+        createdAt: true,
+        normalizedProperties: {
+          select: {
+            id: true,
+            propertyName: true,
+            address: true,
+            price: true,
+            rent: true,
+            yield: true,
+            structure: true,
+            builtYear: true,
+            stationInfo: true,
+            editableFields: true,
+            updatedAt: true
+          },
+          take: 1,
+          orderBy: { createdAt: "desc" }
+        }
       }
     });
 
@@ -34,11 +52,29 @@ export async function GET(request: Request, { params }: Params) {
       return NextResponse.json({ error: "not_found" }, { status: 404 });
     }
 
+    const property = document.normalizedProperties[0] ?? null;
+
     return NextResponse.json(
       {
         document_id: document.id,
         user_id: document.userId,
-        created_at: document.createdAt
+        file_path: document.filePath,
+        created_at: document.createdAt,
+        normalized_property: property
+          ? {
+              id: property.id,
+              property_name: property.propertyName,
+              address: property.address,
+              price: property.price,
+              rent: property.rent,
+              yield: property.yield,
+              structure: property.structure,
+              built_year: property.builtYear,
+              station_info: property.stationInfo,
+              editable_fields: property.editableFields,
+              updated_at: property.updatedAt
+            }
+          : null
       },
       { status: 200 }
     );

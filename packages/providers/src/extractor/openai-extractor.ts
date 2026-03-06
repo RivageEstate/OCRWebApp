@@ -26,7 +26,7 @@ export class OpenAIExtractor implements Extractor {
     this.client = new OpenAI();
   }
 
-  async extract(rawText: string): Promise<NormalizedFields> {
+  async extract(rawText: string, _options?: { signal?: AbortSignal }): Promise<NormalizedFields> {
     const completion = await this.client.beta.chat.completions.parse({
       model: "gpt-4o-2024-08-06",
       messages: [

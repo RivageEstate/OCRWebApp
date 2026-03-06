@@ -199,12 +199,12 @@ components:
     DocumentResponse:
       type: object
       required:
-        - id
+        - document_id
         - user_id
         - file_path
         - created_at
       properties:
-        id:
+        document_id:
           type: string
           format: uuid
         user_id:
@@ -215,6 +215,76 @@ components:
         created_at:
           type: string
           format: date-time
+        normalized_property:
+          $ref: "#/components/schemas/NormalizedProperty"
+          nullable: true
+    NormalizedProperty:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          format: uuid
+        property_name:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        price:
+          type: number
+          nullable: true
+        rent:
+          type: number
+          nullable: true
+        yield:
+          type: number
+          nullable: true
+        structure:
+          type: string
+          nullable: true
+        built_year:
+          type: string
+          nullable: true
+        station_info:
+          type: string
+          nullable: true
+        editable_fields:
+          type: object
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+    UpdatePropertyRequest:
+      type: object
+      properties:
+        property_name:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        price:
+          type: number
+          nullable: true
+        rent:
+          type: number
+          nullable: true
+        yield:
+          type: number
+          nullable: true
+        structure:
+          type: string
+          nullable: true
+        built_year:
+          type: string
+          nullable: true
+        station_info:
+          type: string
+          nullable: true
+        editable_fields:
+          type: object
     JobStatus:
       type: string
       enum:

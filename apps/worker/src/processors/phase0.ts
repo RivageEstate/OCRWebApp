@@ -2,6 +2,9 @@ import { prisma } from "@ocrwebapp/db";
 import { isValidJobTransition } from "@ocrwebapp/domain";
 import { getStorageAdapter, getOCRProvider, getExtractor } from "@ocrwebapp/providers";
 
+const MAX_RETRIES = 3;
+const TIMEOUT_MS = 300_000; // 300秒
+
 type JobPayload = {
   job_id: string;
   attempt?: number;
@@ -12,7 +15,6 @@ export async function processPhase0Job(payload: JobPayload): Promise<void> {
   const { job_id } = payload;
   console.log("[worker] phase0 job started:", job_id);
 
-  // 1. ジョブとドキュメントを取得
   const job = await prisma.job.findUnique({
     where: { id: job_id },
     include: { document: true }
@@ -27,25 +29,86 @@ export async function processPhase0Job(payload: JobPayload): Promise<void> {
     return;
   }
 
-  // 2. queued → processing
   await prisma.job.update({
     where: { id: job_id },
     data: { status: "processing" }
   });
 
-  try {
-    // 3. ストレージから署名付きURLを取得
-    const storage = getStorageAdapter();
-    const imageUrl = await storage.getSignedUrl(job.document.filePath);
+  await runWithRetry(job_id, job.documentId, job.document.filePath);
+}
 
-    // 4. OCRでテキスト抽出
-    const ocrProvider = getOCRProvider();
-    const ocrResult = await ocrProvider.extractText(imageUrl);
+async function runWithRetry(
+  jobId: string,
+  documentId: string,
+  filePath: string
+): Promise<void> {
+  let lastError: Error | undefined;
 
-    // 5. extractions テーブルに保存
-    const extraction = await prisma.extraction.create({
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const backoffMs = 1000 * 2 ** (attempt - 1); // 1s, 2s
+      console.log(`[worker] retry ${attempt}/${MAX_RETRIES - 1} for job ${jobId} after ${backoffMs}ms`);
+      await sleep(backoffMs);
+    }
+
+    try {
+      await runWithTimeout(
+        (signal) => runJob(documentId, filePath, signal),
+        TIMEOUT_MS
+      );
+
+      await prisma.job.update({
+        where: { id: jobId },
+        data: { status: "succeeded" }
+      });
+      console.log("[worker] phase0 job succeeded:", jobId);
+      return;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      console.error(`[worker] attempt ${attempt + 1} failed for job ${jobId}:`, lastError.message);
+
+      await prisma.job.update({
+        where: { id: jobId },
+        data: { retryCount: attempt + 1 }
+      });
+    }
+  }
+
+  // リトライ上限到達 → failed
+  const message = lastError?.message ?? "unknown error";
+  console.error(`[worker] job ${jobId} failed after ${MAX_RETRIES} attempts:`, message);
+  await prisma.job.update({
+    where: { id: jobId },
+    data: { status: "failed", errorMessage: message }
+  });
+  throw lastError;
+}
+
+async function runJob(
+  documentId: string,
+  filePath: string,
+  signal: AbortSignal
+): Promise<void> {
+  throwIfAborted(signal);
+
+  const storage = getStorageAdapter();
+  const imageUrl = await storage.getSignedUrl(filePath);
+  throwIfAborted(signal);
+
+  const ocrProvider = getOCRProvider();
+  const ocrResult = await ocrProvider.extractText(imageUrl, { signal });
+  throwIfAborted(signal);
+
+  const extractor = getExtractor();
+  const normalized = await extractor.extract(ocrResult.raw_text, { signal });
+  throwIfAborted(signal);
+
+  const { extraction, property } = await prisma.$transaction(async (tx) => {
+    throwIfAborted(signal);
+
+    const extraction = await tx.extraction.create({
       data: {
-        documentId: job.documentId,
+        documentId,
         rawText: ocrResult.raw_text,
         ocrProvider: ocrProvider.constructor.name,
         confidence: ocrResult.confidence != null ? ocrResult.confidence : null,
@@ -53,16 +116,12 @@ export async function processPhase0Job(payload: JobPayload): Promise<void> {
         extractorVersion: "v1"
       }
     });
-    console.log("[worker] extraction saved:", extraction.id);
 
-    // 6. LLM抽出器で構造化データに変換
-    const extractor = getExtractor();
-    const normalized = await extractor.extract(ocrResult.raw_text);
+    throwIfAborted(signal);
 
-    // 7. normalized_properties テーブルに保存
-    const property = await prisma.normalizedProperty.create({
+    const property = await tx.normalizedProperty.create({
       data: {
-        documentId: job.documentId,
+        documentId,
         propertyName: normalized.propertyName as string | null ?? null,
         address: normalized.address as string | null ?? null,
         price: normalized.price as number | null ?? null,
@@ -74,25 +133,52 @@ export async function processPhase0Job(payload: JobPayload): Promise<void> {
         editableFields: normalized
       }
     });
-    console.log("[worker] normalized property saved:", property.id);
 
-    // 8. processing → succeeded
-    await prisma.job.update({
-      where: { id: job_id },
-      data: { status: "succeeded" }
-    });
-    console.log("[worker] phase0 job succeeded:", job_id);
-  } catch (error) {
-    // 失敗時: processing → failed
-    const message = error instanceof Error ? error.message : String(error);
-    console.error("[worker] phase0 job failed:", job_id, error);
-    await prisma.job.update({
-      where: { id: job_id },
-      data: {
-        status: "failed",
-        errorMessage: message
+    return { extraction, property };
+  });
+
+  console.log("[worker] normalized property saved:", property.id);
+  console.log("[worker] extraction saved:", extraction.id);
+}
+
+export async function runWithTimeout<T>(
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number
+): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    const controller = new AbortController();
+    const timeoutError = createTimeoutError(timeoutMs);
+    const timeoutId = setTimeout(() => {
+      controller.abort(timeoutError);
+      reject(timeoutError);
+    }, timeoutMs);
+
+    operation(controller.signal).then(
+      (value) => {
+        clearTimeout(timeoutId);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        reject(error);
       }
-    });
-    throw error;
+    );
+  });
+}
+
+function throwIfAborted(signal: AbortSignal): void {
+  if (!signal.aborted) {
+    return;
   }
+
+  const reason = signal.reason;
+  throw reason instanceof Error ? reason : new Error("operation aborted");
+}
+
+function createTimeoutError(ms: number): Error {
+  return new Error(`timeout after ${ms}ms`);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

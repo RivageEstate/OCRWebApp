@@ -96,10 +96,16 @@ export function PollingJobStatus({ jobId }: { jobId: string }) {
       </div>
 
       {jobStatus.status === 'succeeded' && (
-        <div className="rounded-lg border bg-card p-6">
+        <div className="rounded-lg border bg-card p-6 space-y-3">
           <p className="text-sm text-muted-foreground">
-            OCR処理が完了しました。ドキュメントID: {jobStatus.document_id}
+            OCR処理が完了しました。
           </p>
+          <a
+            href={`/documents/${jobStatus.document_id}/edit`}
+            className="inline-block rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium"
+          >
+            物件情報を確認・編集する
+          </a>
         </div>
       )}
 
