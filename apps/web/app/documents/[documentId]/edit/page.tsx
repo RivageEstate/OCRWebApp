@@ -6,6 +6,12 @@ type Props = {
 
 type DocumentWithProperty = {
   document_id: string;
+  latest_job: {
+    job_id: string;
+    status: "queued" | "processing" | "succeeded" | "failed";
+    error_message: string | null;
+    updated_at: string;
+  } | null;
   normalized_property: NormalizedProperty | null;
 };
 
@@ -41,9 +47,11 @@ export default async function DocumentEditPage({ params }: Props) {
           <p className="text-muted-foreground">
             OCR解析がまだ完了していません。処理完了後にご利用ください。
           </p>
-          <a href={`/jobs/${documentId}`} className="mt-4 inline-block text-sm text-primary underline">
-            処理状況を確認する
-          </a>
+          {doc.latest_job && (
+            <a href={`/jobs/${doc.latest_job.job_id}`} className="mt-4 inline-block text-sm text-primary underline">
+              処理状況を確認する
+            </a>
+          )}
         </div>
       </main>
     );

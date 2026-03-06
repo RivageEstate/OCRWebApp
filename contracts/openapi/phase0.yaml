@@ -215,9 +215,30 @@ components:
         created_at:
           type: string
           format: date-time
+        latest_job:
+          $ref: "#/components/schemas/LatestJobSummary"
+          nullable: true
         normalized_property:
           $ref: "#/components/schemas/NormalizedProperty"
           nullable: true
+    LatestJobSummary:
+      type: object
+      required:
+        - job_id
+        - status
+        - updated_at
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        status:
+          $ref: "#/components/schemas/JobStatus"
+        error_message:
+          type: string
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
     NormalizedProperty:
       type: object
       required:
