@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockRequireUserId = vi.fn();
+const MockUnauthorizedError = class UnauthorizedError extends Error {};
 const mockFindFirst = vi.fn();
 const mockFindUnique = vi.fn();
 const mockPrisma = {
@@ -12,7 +13,7 @@ const mockPrisma = {
 
 vi.mock("@/lib/auth/session", () => ({
   requireUserId: mockRequireUserId,
-  UnauthorizedError: class UnauthorizedError extends Error {}
+  UnauthorizedError: MockUnauthorizedError
 }));
 
 vi.mock("@ocrwebapp/db", () => ({
@@ -20,6 +21,19 @@ vi.mock("@ocrwebapp/db", () => ({
 }));
 
 const { GET } = await import("@web/app/api/properties/[propertyId]/export/route");
+
+const PROP_FIXTURE = {
+  id: "prop-1",
+  propertyName: "テスト物件",
+  address: "東京都渋谷区",
+  price: 12000,
+  rent: 45,
+  yield: 4.5,
+  structure: "RC",
+  builtYear: "2001年",
+  stationInfo: "渋谷駅 徒歩5分",
+  updatedAt: new Date("2026-03-07T00:00:00Z")
+};
 
 describe("GET /api/properties/[propertyId]/export", () => {
   beforeEach(() => {
@@ -29,18 +43,7 @@ describe("GET /api/properties/[propertyId]/export", () => {
   });
 
   it("exports CSV with the fixed field order and filename convention", async () => {
-    mockFindFirst.mockResolvedValue({
-      id: "prop-1",
-      propertyName: "テスト物件",
-      address: "東京都渋谷区",
-      price: 12000,
-      rent: 45,
-      yield: 4.5,
-      structure: "RC",
-      builtYear: "2001年",
-      stationInfo: "渋谷駅 徒歩5分",
-      updatedAt: new Date("2026-03-07T00:00:00Z")
-    });
+    mockFindFirst.mockResolvedValue(PROP_FIXTURE);
 
     const response = await GET(
       new Request("http://localhost/api/properties/prop-1/export?format=csv"),
@@ -55,6 +58,19 @@ describe("GET /api/properties/[propertyId]/export", () => {
     expect(body).toContain("更新日時");
   });
 
+  it("exports PDF with the filename convention", async () => {
+    mockFindFirst.mockResolvedValue(PROP_FIXTURE);
+
+    const response = await GET(
+      new Request("http://localhost/api/properties/prop-1/export?format=pdf"),
+      { params: Promise.resolve({ propertyId: "66666666-6666-4666-8666-666666666666" }) }
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Content-Type")).toContain("application/pdf");
+    expect(response.headers.get("Content-Disposition")).toContain("property_prop-1_20260307.pdf");
+  });
+
   it("returns 400 for unsupported formats", async () => {
     const response = await GET(
       new Request("http://localhost/api/properties/prop-1/export?format=xlsx"),
@@ -63,5 +79,54 @@ describe("GET /api/properties/[propertyId]/export", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({ error: "format must be csv or pdf" });
+  });
+
+  it("returns 400 for an invalid property ID format", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/properties/not-a-uuid/export?format=csv"),
+      { params: Promise.resolve({ propertyId: "not-a-uuid" }) }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_property_id" });
+    expect(mockFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the property does not exist", async () => {
+    mockFindFirst.mockResolvedValue(null);
+    mockFindUnique.mockResolvedValue(null);
+
+    const response = await GET(
+      new Request("http://localhost/api/properties/66666666-6666-4666-8666-666666666666/export?format=csv"),
+      { params: Promise.resolve({ propertyId: "66666666-6666-4666-8666-666666666666" }) }
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+
+  it("returns 403 when the property belongs to another user", async () => {
+    mockFindFirst.mockResolvedValue(null);
+    mockFindUnique.mockResolvedValue({ id: "66666666-6666-4666-8666-666666666666" });
+
+    const response = await GET(
+      new Request("http://localhost/api/properties/66666666-6666-4666-8666-666666666666/export?format=csv"),
+      { params: Promise.resolve({ propertyId: "66666666-6666-4666-8666-666666666666" }) }
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "forbidden" });
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    mockRequireUserId.mockRejectedValue(new MockUnauthorizedError("unauthorized"));
+
+    const response = await GET(
+      new Request("http://localhost/api/properties/66666666-6666-4666-8666-666666666666/export?format=csv"),
+      { params: Promise.resolve({ propertyId: "66666666-6666-4666-8666-666666666666" }) }
+    );
+
+    expect(response.status).toBe(401);
+    expect(mockFindFirst).not.toHaveBeenCalled();
   });
 });

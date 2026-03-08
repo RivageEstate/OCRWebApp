@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockRequireUserId = vi.fn();
+const MockUnauthorizedError = class UnauthorizedError extends Error {};
 const mockStorageUpload = vi.fn();
 const mockPrisma = {
   $transaction: vi.fn()
@@ -8,7 +9,7 @@ const mockPrisma = {
 
 vi.mock("@/lib/auth/session", () => ({
   requireUserId: mockRequireUserId,
-  UnauthorizedError: class UnauthorizedError extends Error {}
+  UnauthorizedError: MockUnauthorizedError
 }));
 
 vi.mock("@ocrwebapp/providers", () => ({
@@ -88,5 +89,22 @@ describe("POST /api/documents", () => {
 
     expect(response.status).toBe(413);
     await expect(response.json()).resolves.toEqual({ error: "file_too_large" });
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    mockRequireUserId.mockRejectedValue(new MockUnauthorizedError("unauthorized"));
+
+    const formData = new FormData();
+    formData.append("file", new File(["dummy"], "sample.pdf", { type: "application/pdf" }));
+    const request = new Request("http://localhost/api/documents", {
+      method: "POST",
+      body: formData
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(401);
+    expect(mockStorageUpload).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
   });
 });
