@@ -9,10 +9,13 @@
  *   CLOUD_TASKS_QUEUE         キュー名
  *   WORKER_URL                Cloud Run サービスの URL (例: https://ocrwebapp-worker-xxx.run.app)
  *   WORKER_SERVICE_ACCOUNT    Worker 呼び出しに使う SA メール
+ *   GCP_SERVICE_ACCOUNT_KEY   Cloud Tasks 呼び出し用 SA キー JSON（Vercel の環境変数に設定）
  *
  * 省略可能:
  *   CLOUD_TASKS_LOCATION      リージョン (デフォルト: asia-northeast1)
  */
+
+import { createSign } from "crypto";
 
 type JobPayload = {
   job_id: string;
@@ -28,16 +31,64 @@ type CloudTasksTask = {
   };
 };
 
-/** Cloud Run のメタデータサーバーからアクセストークンを取得する */
+type ServiceAccountKey = {
+  client_email: string;
+  private_key: string;
+};
+
+/**
+ * サービスアカウントキー JSON から Google API アクセストークンを取得する。
+ * GCP_SERVICE_ACCOUNT_KEY 環境変数に SA キー JSON 文字列を設定する。
+ * Vercel など GCP 外部の環境でも動作する。
+ */
 async function getGcpAccessToken(): Promise<string> {
-  const res = await fetch(
-    "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
-    { headers: { "Metadata-Flavor": "Google" } }
-  );
-  if (!res.ok) {
-    throw new Error(`metadata server returned ${res.status}`);
+  const keyJson = process.env.GCP_SERVICE_ACCOUNT_KEY;
+  if (!keyJson) {
+    throw new Error(
+      "GCP_SERVICE_ACCOUNT_KEY is not set. Set a service account key JSON to call Cloud Tasks from Vercel."
+    );
   }
-  const data = (await res.json()) as { access_token: string };
+
+  const key = JSON.parse(keyJson) as ServiceAccountKey;
+  const now = Math.floor(Date.now() / 1000);
+
+  const header = Buffer.from(
+    JSON.stringify({ alg: "RS256", typ: "JWT" })
+  ).toString("base64url");
+
+  const claimSet = Buffer.from(
+    JSON.stringify({
+      iss: key.client_email,
+      scope: "https://www.googleapis.com/auth/cloud-tasks",
+      aud: "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600,
+    })
+  ).toString("base64url");
+
+  const sign = createSign("RSA-SHA256");
+  sign.update(`${header}.${claimSet}`);
+  const signature = sign.sign(key.private_key, "base64url");
+
+  const jwt = `${header}.${claimSet}.${signature}`;
+
+  const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+
+  if (!tokenRes.ok) {
+    const body = await tokenRes.text();
+    throw new Error(
+      `Failed to get GCP access token: HTTP ${tokenRes.status} ${body}`
+    );
+  }
+
+  const data = (await tokenRes.json()) as { access_token: string };
   return data.access_token;
 }
 
@@ -56,7 +107,7 @@ export async function dispatchWorkerJob(jobId: string): Promise<void> {
     console.warn(
       "[dispatch] Cloud Tasks not configured — skipping dispatch for job",
       jobId,
-      "(set CLOUD_TASKS_PROJECT, CLOUD_TASKS_QUEUE, WORKER_URL, WORKER_SERVICE_ACCOUNT)"
+      "(set CLOUD_TASKS_PROJECT, CLOUD_TASKS_QUEUE, WORKER_URL, WORKER_SERVICE_ACCOUNT, GCP_SERVICE_ACCOUNT_KEY)"
     );
     return;
   }
