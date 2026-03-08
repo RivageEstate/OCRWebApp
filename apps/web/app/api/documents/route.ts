@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@ocrwebapp/db";
 import { requireUserId, UnauthorizedError } from "@/lib/auth/session";
 import { getStorageAdapter } from "@ocrwebapp/providers";
+import { dispatchWorkerJob } from "@/lib/dispatch/cloudtasks";
 
 const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
@@ -49,6 +50,11 @@ export async function POST(request: Request) {
       });
 
       return { document, job };
+    });
+
+    // Cloud Tasks へ非同期でエンキュー（失敗してもジョブは DB に残る）
+    dispatchWorkerJob(result.job.id).catch((err: unknown) => {
+      console.error("[POST /api/documents] dispatch failed (job queued but not dispatched):", err);
     });
 
     return NextResponse.json(
