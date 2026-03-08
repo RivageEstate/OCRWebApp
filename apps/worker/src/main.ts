@@ -1,5 +1,6 @@
 import http from "http";
 import { processPhase0Job } from "./processors/phase0";
+import { logger } from "./logger";
 
 type JobPayload = {
   job_id: string;
@@ -47,7 +48,11 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ status: "ok" }));
     } catch (error) {
-      console.error("[worker] processPhase0Job failed:", error);
+      logger.error("processPhase0Job failed", {
+        job_id: payload.job_id,
+        step: "dispatch_error",
+        error: error instanceof Error ? error.message : String(error)
+      });
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "processing_failed" }));
     }
@@ -59,6 +64,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`[worker] HTTP server listening on port ${PORT}`);
+  logger.info("HTTP server listening", { port: PORT });
 });
 

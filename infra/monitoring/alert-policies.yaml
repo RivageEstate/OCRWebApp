@@ -1,0 +1,120 @@
+# Cloud Monitoring アラートポリシー定義
+#
+# 適用方法（gcloud CLI）:
+#   gcloud alpha monitoring policies create \
+#     --policy-from-file=infra/monitoring/alert-policies.yaml
+#
+# 事前に notification channels を作成し、notificationChannels に ID を設定すること。
+#   gcloud alpha monitoring channels list
+#
+# リソース: https://cloud.google.com/monitoring/alerts/using-alerting-ui
+
+# -------------------------------------------------------------------
+# 1. ジョブ失敗率アラート
+#    5 分間で失敗ジョブが 3 件以上 → Pager / Slack 通知
+# -------------------------------------------------------------------
+- displayName: "[OCRWebApp] Worker ジョブ失敗件数 > 閾値"
+  documentation:
+    content: |
+      ## 概要
+      5 分間の worker ジョブ失敗件数が 3 件を超えました。
+
+      ## 確認手順
+      1. Cloud Logging で `step="fail"` エントリーを検索し、エラー内容を確認する。
+      2. OCR/LLM プロバイダーのレート制限・障害状況を確認する。
+      3. 必要に応じて Cloud Tasks キューを一時停止し、ジョブの再キューを検討する。
+
+      ## ランブック
+      docs/operations/20260309-monitoring-runbook.md
+    mimeType: text/markdown
+  conditions:
+    - displayName: job_failed_total > 3 / 5min
+      conditionThreshold:
+        filter: >
+          metric.type="logging.googleapis.com/user/worker/job_failed_total"
+          resource.type="cloud_run_revision"
+        aggregations:
+          - alignmentPeriod: 300s
+            crossSeriesReducer: REDUCE_SUM
+            perSeriesAligner: ALIGN_DELTA
+        comparison: COMPARISON_GT
+        thresholdValue: 3
+        duration: 0s
+  alertStrategy:
+    notificationRateLimit:
+      period: 1800s  # 30 分に 1 回まで
+  combiner: OR
+  enabled: true
+
+# -------------------------------------------------------------------
+# 2. ジョブ処理件数ゼロアラート
+#    15 分間で成功ジョブが 0 件 → Worker 停止・キュー詰まりを疑う
+# -------------------------------------------------------------------
+- displayName: "[OCRWebApp] Worker 処理件数が 0（15 分間）"
+  documentation:
+    content: |
+      ## 概要
+      15 分間、Worker が 1 件もジョブを完了していません。
+
+      ## 確認手順
+      1. Cloud Run の Worker サービスが稼働中か確認する。
+      2. Cloud Tasks キューのタスク数・エラー率を確認する。
+      3. DB 接続・プロバイダー認証情報が有効か確認する。
+
+      ## ランブック
+      docs/operations/20260309-monitoring-runbook.md
+    mimeType: text/markdown
+  conditions:
+    - displayName: job_succeeded_total == 0 / 15min
+      conditionAbsent:
+        filter: >
+          metric.type="logging.googleapis.com/user/worker/job_succeeded_total"
+          resource.type="cloud_run_revision"
+        aggregations:
+          - alignmentPeriod: 900s
+            crossSeriesReducer: REDUCE_SUM
+            perSeriesAligner: ALIGN_DELTA
+        duration: 900s
+  alertStrategy:
+    notificationRateLimit:
+      period: 3600s  # 1 時間に 1 回まで
+  combiner: OR
+  enabled: true
+
+# -------------------------------------------------------------------
+# 3. ジョブ処理時間超過アラート
+#    p95 の処理時間が 240 秒（タイムアウト 300 秒の 80%）を超えた場合
+# -------------------------------------------------------------------
+- displayName: "[OCRWebApp] Worker ジョブ p95 処理時間 > 240s"
+  documentation:
+    content: |
+      ## 概要
+      ジョブ処理時間の p95 が 240 秒を超えています（タイムアウト閾値 300 秒の 80%）。
+      タイムアウト・リトライが増加するリスクがあります。
+
+      ## 確認手順
+      1. OCR/LLM プロバイダーのレスポンスタイムを確認する。
+      2. 処理対象ファイルのサイズ・品質を確認する。
+      3. タイムアウト値（TIMEOUT_MS）の見直しを検討する。
+
+      ## ランブック
+      docs/operations/20260309-monitoring-runbook.md
+    mimeType: text/markdown
+  conditions:
+    - displayName: job_duration_ms p95 > 240000ms
+      conditionThreshold:
+        filter: >
+          metric.type="logging.googleapis.com/user/worker/job_duration_ms"
+          resource.type="cloud_run_revision"
+        aggregations:
+          - alignmentPeriod: 600s
+            crossSeriesReducer: REDUCE_PERCENTILE_95
+            perSeriesAligner: ALIGN_DELTA
+        comparison: COMPARISON_GT
+        thresholdValue: 240000
+        duration: 0s
+  alertStrategy:
+    notificationRateLimit:
+      period: 3600s
+  combiner: OR
+  enabled: true
