@@ -171,11 +171,11 @@ export function PollingJobStatus({ jobId }: { jobId: string }) {
 
       {jobStatus.status === 'failed' && (
         <div className="rounded-lg border border-destructive/30 bg-card p-6 space-y-3">
-          {jobStatus.error_message && (
-            <p className="text-sm text-destructive" role="alert">
-              エラー：{jobStatus.error_message}
-            </p>
-          )}
+          <p className="text-sm text-destructive font-medium" role="alert">
+            {jobStatus.error_message
+              ? `エラー：${jobStatus.error_message}`
+              : '処理に失敗しました。'}
+          </p>
           <a href="/upload" className="text-sm text-primary underline">
             別のファイルをアップロードする
           </a>
