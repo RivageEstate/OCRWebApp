@@ -192,10 +192,19 @@ git push origin main
 ### DB マイグレーションのロールバック
 
 Prisma は `migrate revert` を持たない。
-ロールバックが必要な場合は新規マイグレーションで補正する。
+ロールバックが必要な場合は**ローカル開発環境で**補正マイグレーションを作成し、`migrate deploy` で本番に適用する。
+
+> **注意:** `prisma migrate dev` は開発専用コマンド。本番の `DATABASE_URL` を設定した状態で実行すると意図しない変更が本番 DB に即時適用されるため、本番環境では絶対に使わないこと。
 
 ```bash
+# 1. ローカル開発環境（DATABASE_URL はローカル DB）で補正マイグレーションを作成
 npx prisma migrate dev --name revert_xxx --schema packages/db/prisma/schema.prisma
+
+# 2. 作成されたマイグレーションファイルを git にコミットして main にマージ
+
+# 3. 本番 DB に適用（DATABASE_URL に本番接続文字列をセット）
+export DATABASE_URL="postgresql://..."
+npx prisma migrate deploy --schema packages/db/prisma/schema.prisma
 ```
 
 ---
