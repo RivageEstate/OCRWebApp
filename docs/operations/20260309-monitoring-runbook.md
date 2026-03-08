@@ -54,15 +54,18 @@ Worker が出力する構造化ログのフィールド：
 gcloud config set project <PROJECT_ID>
 
 # 各メトリクスを登録（infra/monitoring/log-metrics.yaml の各エントリーを個別に適用）
-gcloud logging metrics create worker_job_failed_total \
+# スラッシュ区切り名を使うことで metric.type が
+# "logging.googleapis.com/user/worker/job_failed_total" となり、
+# alert-policies.yaml のフィルターと一致する。
+gcloud logging metrics create worker/job_failed_total \
   --description="Worker ジョブ最終失敗件数" \
   --log-filter='resource.type="cloud_run_revision" jsonPayload.step="fail" severity="ERROR"'
 
-gcloud logging metrics create worker_job_succeeded_total \
+gcloud logging metrics create worker/job_succeeded_total \
   --description="Worker ジョブ成功件数" \
   --log-filter='resource.type="cloud_run_revision" jsonPayload.step="success" severity="INFO"'
 
-gcloud logging metrics create worker_job_duration_ms \
+gcloud logging metrics create worker/job_duration_ms \
   --description="Worker ジョブ処理時間（ms）" \
   --log-filter='resource.type="cloud_run_revision" jsonPayload.step=("success" OR "fail")' \
   --value-extractor='EXTRACT(jsonPayload.duration_ms)' \
@@ -70,7 +73,7 @@ gcloud logging metrics create worker_job_duration_ms \
   --value-type=DISTRIBUTION \
   --unit=ms
 
-gcloud logging metrics create worker_job_retry_total \
+gcloud logging metrics create worker/job_retry_total \
   --description="Worker ジョブリトライ件数" \
   --log-filter='resource.type="cloud_run_revision" jsonPayload.step="retry" severity="WARNING"'
 ```
@@ -150,7 +153,7 @@ gcloud alpha monitoring policies list
 gcloud alpha monitoring policies update <POLICY_ID> --no-enabled
 
 # ログベースメトリクスの削除
-gcloud logging metrics delete worker_job_failed_total
+gcloud logging metrics delete worker/job_failed_total
 ```
 
 ## 障害時対応 / Incident Response
