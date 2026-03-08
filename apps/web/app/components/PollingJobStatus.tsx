@@ -182,7 +182,13 @@ export function PollingJobStatus({ jobId }: { jobId: string }) {
         </div>
       )}
 
-      {(jobStatus.status === 'queued' || jobStatus.status === 'processing') && (
+      {jobStatus.status === 'queued' && (
+        <p className="text-sm text-center text-muted-foreground">
+          処理の順番待ちです。しばらくお待ちください...
+        </p>
+      )}
+
+      {jobStatus.status === 'processing' && (
         <p className="text-sm text-center text-muted-foreground">
           OCR処理中です。しばらくお待ちください...
         </p>
