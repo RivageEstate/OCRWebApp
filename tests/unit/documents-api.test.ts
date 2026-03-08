@@ -85,4 +85,23 @@ describe("POST /api/documents", () => {
     expect(response.status).toBe(413);
     await expect(response.json()).resolves.toEqual({ error: "file_too_large" });
   });
+
+  it("returns 401 when the request is not authenticated", async () => {
+    const { UnauthorizedError } = await import("@/lib/auth/session");
+    mockRequireUserId.mockRejectedValue(new UnauthorizedError("unauthorized"));
+
+    const formData = new FormData();
+    formData.append("file", new File(["dummy"], "sample.pdf", { type: "application/pdf" }));
+    const request = new Request("http://localhost/api/documents", {
+      method: "POST",
+      body: formData
+    });
+
+    const response = await POST(request);
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "unauthorized" });
+    expect(mockStorageUpload).not.toHaveBeenCalled();
+    expect(mockPrisma.$transaction).not.toHaveBeenCalled();
+  });
 });

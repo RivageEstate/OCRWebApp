@@ -57,4 +57,43 @@ describe("GET /api/jobs/[jobId]", () => {
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({ error: "not_found" });
   });
+
+  it("returns 404 when the job belongs to another user", async () => {
+    // The query filters by userId, so another user's job returns null
+    mockPrisma.job.findFirst.mockResolvedValue(null);
+    mockRequireUserId.mockResolvedValue("99999999-9999-4999-8999-999999999999");
+
+    const response = await GET(
+      new Request("http://localhost/api/jobs/22222222-2222-4222-8222-222222222222"),
+      { params: Promise.resolve({ jobId: "22222222-2222-4222-8222-222222222222" }) }
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+
+  it("returns 400 when jobId is not a valid UUID", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/jobs/invalid-id"),
+      { params: Promise.resolve({ jobId: "invalid-id" }) }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_job_id" });
+    expect(mockPrisma.job.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when the request is not authenticated", async () => {
+    const { UnauthorizedError } = await import("@/lib/auth/session");
+    mockRequireUserId.mockRejectedValue(new UnauthorizedError("unauthorized"));
+
+    const response = await GET(
+      new Request("http://localhost/api/jobs/22222222-2222-4222-8222-222222222222"),
+      { params: Promise.resolve({ jobId: "22222222-2222-4222-8222-222222222222" }) }
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "unauthorized" });
+    expect(mockPrisma.job.findFirst).not.toHaveBeenCalled();
+  });
 });

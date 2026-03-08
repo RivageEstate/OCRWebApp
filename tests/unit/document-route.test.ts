@@ -103,4 +103,41 @@ describe("GET /api/documents/[documentId]", () => {
       }
     });
   });
+
+  it("returns 404 when the document is not found", async () => {
+    mockPrisma.document.findFirst.mockResolvedValue(null);
+
+    const response = await GET(
+      new Request("http://localhost/api/documents/44444444-4444-4444-8444-444444444444"),
+      { params: Promise.resolve({ documentId: "44444444-4444-4444-8444-444444444444" }) }
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+
+  it("returns 400 when documentId is not a valid UUID", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/documents/invalid-id"),
+      { params: Promise.resolve({ documentId: "invalid-id" }) }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_document_id" });
+    expect(mockPrisma.document.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when the request is not authenticated", async () => {
+    const { UnauthorizedError } = await import("@/lib/auth/session");
+    mockRequireUserId.mockRejectedValue(new UnauthorizedError("unauthorized"));
+
+    const response = await GET(
+      new Request("http://localhost/api/documents/44444444-4444-4444-8444-444444444444"),
+      { params: Promise.resolve({ documentId: "44444444-4444-4444-8444-444444444444" }) }
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "unauthorized" });
+    expect(mockPrisma.document.findFirst).not.toHaveBeenCalled();
+  });
 });
