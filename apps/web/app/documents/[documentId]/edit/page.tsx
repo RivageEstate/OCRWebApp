@@ -2,7 +2,7 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { prisma } from "@ocrwebapp/db";
 import { isValidUuid } from "@ocrwebapp/domain";
-import { PropertyEditForm, NormalizedProperty } from '../../../components/PropertyEditForm';
+import { PropertyEditForm, NormalizedProperty } from "../../../components/PropertyEditForm";
 
 type Props = {
   params: Promise<{ documentId: string }>;
