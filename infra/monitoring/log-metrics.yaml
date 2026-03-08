@@ -1,0 +1,73 @@
+# Cloud Logging ログベースメトリクス定義
+#
+# 適用方法:
+#   gcloud logging metrics create worker_job_failed \
+#     --config-from-file=infra/monitoring/log-metrics.yaml
+#
+# または各メトリクスを個別に gcloud logging metrics create で登録する。
+# リソース: https://cloud.google.com/logging/docs/logs-based-metrics
+
+- name: worker/job_failed_total
+  description: >
+    Worker が step=fail で終了したジョブ数（リトライ上限到達）。
+    ジョブ失敗率アラートの分子として使用する。
+  filter: >
+    resource.type="cloud_run_revision"
+    jsonPayload.step="fail"
+    severity="ERROR"
+  metricDescriptor:
+    metricKind: DELTA
+    valueType: INT64
+    unit: "1"
+    labels:
+      - key: job_id
+        valueType: STRING
+        description: 失敗したジョブ ID
+  labelExtractors:
+    job_id: EXTRACT(jsonPayload.job_id)
+
+- name: worker/job_succeeded_total
+  description: >
+    Worker が step=success で完了したジョブ数。
+    処理件数アラートの基準値として使用する。
+  filter: >
+    resource.type="cloud_run_revision"
+    jsonPayload.step="success"
+    severity="INFO"
+  metricDescriptor:
+    metricKind: DELTA
+    valueType: INT64
+    unit: "1"
+    labels:
+      - key: job_id
+        valueType: STRING
+        description: 完了したジョブ ID
+  labelExtractors:
+    job_id: EXTRACT(jsonPayload.job_id)
+
+- name: worker/job_duration_ms
+  description: >
+    ジョブの処理時間（ミリ秒）。step=success または step=fail 時に記録される
+    duration_ms フィールドから抽出するディストリビューションメトリクス。
+  filter: >
+    resource.type="cloud_run_revision"
+    jsonPayload.step=("success" OR "fail")
+    jsonPayload.duration_ms!=""
+  metricDescriptor:
+    metricKind: DELTA
+    valueType: DISTRIBUTION
+    unit: "ms"
+  valueExtractor: EXTRACT(jsonPayload.duration_ms)
+
+- name: worker/job_retry_total
+  description: >
+    Worker がリトライした回数（step=retry）。
+    頻繁なリトライは OCR/LLM プロバイダーの不安定性を示す。
+  filter: >
+    resource.type="cloud_run_revision"
+    jsonPayload.step="retry"
+    severity="WARNING"
+  metricDescriptor:
+    metricKind: DELTA
+    valueType: INT64
+    unit: "1"

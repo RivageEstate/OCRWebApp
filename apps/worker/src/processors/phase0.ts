@@ -1,6 +1,7 @@
 import { prisma } from "@ocrwebapp/db";
 import { isValidJobTransition } from "@ocrwebapp/domain";
 import { getStorageAdapter, getOCRProvider, getExtractor } from "@ocrwebapp/providers";
+import { logger } from "../logger";
 
 const MAX_RETRIES = 3;
 const TIMEOUT_MS = 300_000; // 300秒
@@ -12,8 +13,8 @@ type JobPayload = {
 };
 
 export async function processPhase0Job(payload: JobPayload): Promise<void> {
-  const { job_id } = payload;
-  console.log("[worker] phase0 job started:", job_id);
+  const { job_id, trace_id } = payload;
+  logger.info("phase0 job started", { job_id, step: "start", trace_id });
 
   const job = await prisma.job.findUnique({
     where: { id: job_id },
@@ -25,7 +26,11 @@ export async function processPhase0Job(payload: JobPayload): Promise<void> {
   }
 
   if (!isValidJobTransition(job.status, "processing")) {
-    console.log(`[worker] skipping job ${job_id}: status=${job.status} cannot transition to processing`);
+    logger.warn("phase0 job skipped: invalid transition", {
+      job_id,
+      step: "skip",
+      error: `status=${job.status} cannot transition to processing`
+    });
     return;
   }
 
@@ -34,20 +39,27 @@ export async function processPhase0Job(payload: JobPayload): Promise<void> {
     data: { status: "processing" }
   });
 
-  await runWithRetry(job_id, job.documentId, job.document.filePath);
+  await runWithRetry(job_id, job.documentId, job.document.filePath, trace_id);
 }
 
 async function runWithRetry(
   jobId: string,
   documentId: string,
-  filePath: string
+  filePath: string,
+  traceId?: string
 ): Promise<void> {
   let lastError: Error | undefined;
+  const startedAt = Date.now();
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     if (attempt > 0) {
       const backoffMs = 1000 * 2 ** (attempt - 1); // 1s, 2s
-      console.log(`[worker] retry ${attempt}/${MAX_RETRIES - 1} for job ${jobId} after ${backoffMs}ms`);
+      logger.warn("phase0 job retrying", {
+        job_id: jobId,
+        step: "retry",
+        attempt,
+        trace_id: traceId
+      });
       await sleep(backoffMs);
     }
 
@@ -57,15 +69,28 @@ async function runWithRetry(
         TIMEOUT_MS
       );
 
+      const duration_ms = Date.now() - startedAt;
       await prisma.job.update({
         where: { id: jobId },
         data: { status: "succeeded" }
       });
-      console.log("[worker] phase0 job succeeded:", jobId);
+      logger.info("phase0 job succeeded", {
+        job_id: jobId,
+        step: "success",
+        duration_ms,
+        attempt,
+        trace_id: traceId
+      });
       return;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      console.error(`[worker] attempt ${attempt + 1} failed for job ${jobId}:`, lastError.message);
+      logger.error(`phase0 job attempt failed`, {
+        job_id: jobId,
+        step: "attempt_failed",
+        attempt: attempt + 1,
+        error: lastError.message,
+        trace_id: traceId
+      });
 
       await prisma.job.update({
         where: { id: jobId },
@@ -76,7 +101,14 @@ async function runWithRetry(
 
   // リトライ上限到達 → failed
   const message = lastError?.message ?? "unknown error";
-  console.error(`[worker] job ${jobId} failed after ${MAX_RETRIES} attempts:`, message);
+  const duration_ms = Date.now() - startedAt;
+  logger.error("phase0 job failed", {
+    job_id: jobId,
+    step: "fail",
+    duration_ms,
+    error: message,
+    trace_id: traceId
+  });
   await prisma.job.update({
     where: { id: jobId },
     data: { status: "failed", errorMessage: message }
@@ -137,8 +169,8 @@ async function runJob(
     return { extraction, property };
   });
 
-  console.log("[worker] normalized property saved:", property.id);
-  console.log("[worker] extraction saved:", extraction.id);
+  logger.info("extraction saved", { step: "ocr_saved", extraction_id: extraction.id });
+  logger.info("normalized property saved", { step: "property_saved", property_id: property.id });
 }
 
 export async function runWithTimeout<T>(
