@@ -43,7 +43,7 @@ This runbook targets the Phase 0 MVP release and includes a pre-release preparat
 
 #### Vercel（`apps/web`）
 
-```
+```text
 DATABASE_URL=postgresql://USER:PASSWORD@HOST:5432/ocrwebapp?schema=public
 AUTH_URL=https://your-domain.vercel.app
 AUTH_SECRET=<32文字以上のランダム文字列>
