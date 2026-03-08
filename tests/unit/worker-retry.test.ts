@@ -1,5 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { runWithTimeout } from "../../apps/worker/src/processors/phase0";
+
+vi.mock("@ocrwebapp/db", () => ({
+  prisma: {
+    job: { findUnique: vi.fn(), update: vi.fn() },
+    $transaction: vi.fn()
+  }
+}));
+
+vi.mock("@ocrwebapp/domain", () => ({
+  isValidJobTransition: vi.fn()
+}));
+
+vi.mock("@ocrwebapp/providers", () => ({
+  getStorageAdapter: vi.fn(),
+  getOCRProvider: vi.fn(),
+  getExtractor: vi.fn()
+}));
+
+const { runWithTimeout } = await import("../../apps/worker/src/processors/phase0");
 
 // リトライ・タイムアウトのロジックをテストするためのヘルパー関数
 // (processPhase0Job はDB依存のため、内部ロジックを単体でテスト)
