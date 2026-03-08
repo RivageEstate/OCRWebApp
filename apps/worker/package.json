@@ -3,13 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "esbuild src/main.ts --bundle --platform=node --target=node22 --outfile=dist/main.js --external:@prisma/client --external:.prisma",
+    "typecheck": "tsc --noEmit",
     "start": "node dist/main.js"
   },
   "dependencies": {
     "@ocrwebapp/db": "0.0.0",
     "@ocrwebapp/domain": "0.0.0",
     "@ocrwebapp/providers": "0.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "*"
   }
 }
 

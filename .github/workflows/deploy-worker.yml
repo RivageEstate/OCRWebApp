@@ -1,0 +1,63 @@
+name: Deploy Worker
+
+# main マージ時 + worker/packages 変更があった場合のみ実行
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/worker/**"
+      - "packages/**"
+      - ".github/workflows/deploy-worker.yml"
+
+permissions:
+  contents: read
+  id-token: write # Workload Identity Federation 用
+
+env:
+  REGION: asia-northeast1
+  SERVICE: ocrwebapp-worker
+  ARTIFACT_REGISTRY: asia-northeast1-docker.pkg.dev
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.ARTIFACT_REGISTRY }} --quiet
+
+      - name: Build and push Docker image
+        env:
+          IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ vars.GCP_PROJECT_ID }}/worker/${{ env.SERVICE }}:${{ github.sha }}
+        run: |
+          docker build \
+            --file apps/worker/Dockerfile \
+            --tag "$IMAGE" \
+            .
+          docker push "$IMAGE"
+
+      - name: Deploy to Cloud Run
+        env:
+          IMAGE: ${{ env.ARTIFACT_REGISTRY }}/${{ vars.GCP_PROJECT_ID }}/worker/${{ env.SERVICE }}:${{ github.sha }}
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --image "$IMAGE" \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --no-allow-unauthenticated \
+            --service-account ${{ secrets.WORKER_SERVICE_ACCOUNT }} \
+            --set-secrets "DATABASE_URL=DATABASE_URL:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,GCS_BUCKET=GCS_BUCKET:latest,GOOGLE_APPLICATION_CREDENTIALS_JSON=GOOGLE_APPLICATION_CREDENTIALS_JSON:latest" \
+            --min-instances 0 \
+            --max-instances 10 \
+            --timeout 360 \
+            --quiet

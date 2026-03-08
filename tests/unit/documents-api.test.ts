@@ -21,6 +21,10 @@ vi.mock("@ocrwebapp/db", () => ({
   prisma: mockPrisma
 }));
 
+vi.mock("@/lib/dispatch/cloudtasks", () => ({
+  dispatchWorkerJob: vi.fn().mockResolvedValue(undefined)
+}));
+
 const { POST } = await import("@web/app/api/documents/route");
 
 describe("POST /api/documents", () => {
