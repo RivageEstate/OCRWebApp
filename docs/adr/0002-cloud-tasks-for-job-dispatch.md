@@ -1,10 +1,11 @@
-# Cloud Tasks をジョブディスパッチに採用する
+# Cloud Tasks をジョブディスパッチに採用する / Adopt Cloud Tasks for Job Dispatch
 
-- Title: Cloud Tasks をジョブディスパッチに採用する
+- Title: Cloud Tasks をジョブディスパッチに採用する / Adopt Cloud Tasks for Job Dispatch
 - Status: Accepted
 - Created: 2026-03-08
 - Last Updated: 2026-03-08
 - Owner: Repository Maintainers
+- Language: JA/EN
 - Closes: #43
 
 ## Context
@@ -41,3 +42,26 @@ Phase 0 の規模・シンプルさを優先し、Cloud Tasks を選択した。
 - Worker は Cloud Run Service として常時起動（min-instances 0 でコールドスタートあり）。
 - タイムアウト上限は Cloud Tasks の最大 30 分以内に収める必要がある（現在 Worker は 360 秒）。
 - 将来的にタスクの優先度制御や重複排除が必要になった場合は Pub/Sub への移行を検討する。
+
+## Alternatives
+
+- Pub/Sub を採用し、Worker を Push サブスクリプションで受け取る。
+- SQS 等の AWS サービスを利用する（インフラが分散するため不採用）。
+
+## 概要 / Summary (JA)
+
+`POST /api/documents` 後のジョブを Worker へ非同期配信するため、GCP Cloud Tasks を採用した。
+Cloud Run との親和性・HTTP push のネイティブ対応・リトライ制御の柔軟性を主な採用理由とする。
+
+## Summary (EN)
+
+Adopted GCP Cloud Tasks to asynchronously dispatch jobs to the Worker after `POST /api/documents`.
+Key reasons: native compatibility with Cloud Run, built-in HTTP push support, and flexible retry control.
+
+## 結論 / Conclusion (JA)
+
+Cloud Tasks + Cloud Run HTTP サーバー構成を Phase 0 の標準ジョブディスパッチ方式とする。
+
+## Conclusion (EN)
+
+Cloud Tasks with a Cloud Run HTTP server is the standard job dispatch mechanism for Phase 0.
