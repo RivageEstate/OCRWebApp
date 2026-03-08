@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockRequireUserId = vi.fn();
+const MockUnauthorizedError = class UnauthorizedError extends Error {};
 const mockFindFirst = vi.fn();
 const mockFindUnique = vi.fn();
 const mockUpdate = vi.fn();
@@ -26,7 +27,7 @@ const mockPrisma = {
 
 vi.mock("@/lib/auth/session", () => ({
   requireUserId: mockRequireUserId,
-  UnauthorizedError: class UnauthorizedError extends Error {}
+  UnauthorizedError: MockUnauthorizedError
 }));
 
 vi.mock("@ocrwebapp/db", () => ({
@@ -224,5 +225,70 @@ describe("PUT /api/properties/[propertyId]", () => {
       editable_fields: { propertyName: "旧物件名" },
       updated_at: "2026-03-07T00:00:00.000Z"
     });
+  });
+
+  it("returns 400 for an invalid property ID format", async () => {
+    const response = await PUT(
+      new Request("http://localhost/api/properties/not-a-uuid", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property_name: "テスト" })
+      }),
+      { params: Promise.resolve({ propertyId: "not-a-uuid" }) }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_property_id" });
+    expect(mockFindFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when the property does not exist", async () => {
+    mockFindFirst.mockResolvedValue(null);
+    mockFindUnique.mockResolvedValue(null);
+
+    const response = await PUT(
+      new Request("http://localhost/api/properties/prop-1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property_name: "テスト" })
+      }),
+      { params: Promise.resolve({ propertyId: "55555555-5555-4555-8555-555555555555" }) }
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+
+  it("returns 403 when the property belongs to another user", async () => {
+    mockFindFirst.mockResolvedValue(null);
+    mockFindUnique.mockResolvedValue({ id: "55555555-5555-4555-8555-555555555555" });
+
+    const response = await PUT(
+      new Request("http://localhost/api/properties/prop-1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property_name: "テスト" })
+      }),
+      { params: Promise.resolve({ propertyId: "55555555-5555-4555-8555-555555555555" }) }
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "forbidden" });
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    mockRequireUserId.mockRejectedValue(new MockUnauthorizedError("unauthorized"));
+
+    const response = await PUT(
+      new Request("http://localhost/api/properties/prop-1", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ property_name: "テスト" })
+      }),
+      { params: Promise.resolve({ propertyId: "55555555-5555-4555-8555-555555555555" }) }
+    );
+
+    expect(response.status).toBe(401);
+    expect(mockFindFirst).not.toHaveBeenCalled();
   });
 });

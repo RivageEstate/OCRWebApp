@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockRequireUserId = vi.fn();
+const MockUnauthorizedError = class UnauthorizedError extends Error {};
 const mockPrisma = {
   document: {
     findFirst: vi.fn()
@@ -9,7 +10,7 @@ const mockPrisma = {
 
 vi.mock("@/lib/auth/session", () => ({
   requireUserId: mockRequireUserId,
-  UnauthorizedError: class UnauthorizedError extends Error {}
+  UnauthorizedError: MockUnauthorizedError
 }));
 
 vi.mock("@ocrwebapp/db", () => ({
@@ -102,5 +103,40 @@ describe("GET /api/documents/[documentId]", () => {
         updated_at: "2026-03-07T00:02:00.000Z"
       }
     });
+  });
+
+  it("returns 404 when the document does not exist", async () => {
+    mockPrisma.document.findFirst.mockResolvedValue(null);
+
+    const response = await GET(
+      new Request("http://localhost/api/documents/44444444-4444-4444-8444-444444444444"),
+      { params: Promise.resolve({ documentId: "44444444-4444-4444-8444-444444444444" }) }
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+
+  it("returns 400 for an invalid document ID format", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/documents/not-a-uuid"),
+      { params: Promise.resolve({ documentId: "not-a-uuid" }) }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_document_id" });
+    expect(mockPrisma.document.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    mockRequireUserId.mockRejectedValue(new MockUnauthorizedError("unauthorized"));
+
+    const response = await GET(
+      new Request("http://localhost/api/documents/44444444-4444-4444-8444-444444444444"),
+      { params: Promise.resolve({ documentId: "44444444-4444-4444-8444-444444444444" }) }
+    );
+
+    expect(response.status).toBe(401);
+    expect(mockPrisma.document.findFirst).not.toHaveBeenCalled();
   });
 });

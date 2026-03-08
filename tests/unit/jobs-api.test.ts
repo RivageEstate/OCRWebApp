@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockRequireUserId = vi.fn();
+const MockUnauthorizedError = class UnauthorizedError extends Error {};
 const mockPrisma = {
   job: {
     findFirst: vi.fn()
@@ -9,7 +10,7 @@ const mockPrisma = {
 
 vi.mock("@/lib/auth/session", () => ({
   requireUserId: mockRequireUserId,
-  UnauthorizedError: class UnauthorizedError extends Error {}
+  UnauthorizedError: MockUnauthorizedError
 }));
 
 vi.mock("@ocrwebapp/db", () => ({
@@ -56,5 +57,41 @@ describe("GET /api/jobs/[jobId]", () => {
 
     expect(response.status).toBe(404);
     await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+
+  it("returns 404 when the job belongs to another user", async () => {
+    // findFirst with userId filter returns null for another user's job
+    mockPrisma.job.findFirst.mockResolvedValue(null);
+
+    const response = await GET(
+      new Request("http://localhost/api/jobs/22222222-2222-4222-8222-222222222222"),
+      { params: Promise.resolve({ jobId: "22222222-2222-4222-8222-222222222222" }) }
+    );
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({ error: "not_found" });
+  });
+
+  it("returns 400 for an invalid job ID format", async () => {
+    const response = await GET(
+      new Request("http://localhost/api/jobs/not-a-uuid"),
+      { params: Promise.resolve({ jobId: "not-a-uuid" }) }
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "invalid_job_id" });
+    expect(mockPrisma.job.findFirst).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when unauthenticated", async () => {
+    mockRequireUserId.mockRejectedValue(new MockUnauthorizedError("unauthorized"));
+
+    const response = await GET(
+      new Request("http://localhost/api/jobs/22222222-2222-4222-8222-222222222222"),
+      { params: Promise.resolve({ jobId: "22222222-2222-4222-8222-222222222222" }) }
+    );
+
+    expect(response.status).toBe(401);
+    expect(mockPrisma.job.findFirst).not.toHaveBeenCalled();
   });
 });
