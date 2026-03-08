@@ -103,7 +103,7 @@ gcloud alpha monitoring policies create \
 
 Cloud Logging でジョブログを検索：
 
-```
+```text
 resource.type="cloud_run_revision"
 resource.labels.service_name="ocrwebapp-worker"
 jsonPayload.job_id="<JOB_ID>"
@@ -111,7 +111,7 @@ jsonPayload.job_id="<JOB_ID>"
 
 失敗ジョブのみ絞り込み：
 
-```
+```text
 resource.type="cloud_run_revision"
 jsonPayload.step="fail"
 severity="ERROR"
