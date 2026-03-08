@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { prisma } from "@ocrwebapp/db";
 import { isValidUuid } from "@ocrwebapp/domain";
 import { PropertyEditForm, NormalizedProperty } from "../../../components/PropertyEditForm";
+import { ExportButtons } from "../../../components/ExportButtons";
 
 type Props = {
   params: Promise<{ documentId: string }>;
@@ -168,14 +169,7 @@ export default async function DocumentEditPage({ params }: Props) {
         )}
         <div className="rounded-lg border bg-card p-6">
           <PropertyEditForm property={doc.normalized_property} />
-          <div className="mt-6 flex gap-4 text-sm">
-            <Link href={`/api/properties/${doc.normalized_property.id}/export?format=csv`} className="text-primary underline">
-              CSVを出力
-            </Link>
-            <Link href={`/api/properties/${doc.normalized_property.id}/export?format=pdf`} className="text-primary underline">
-              PDFを出力
-            </Link>
-          </div>
+          <ExportButtons propertyId={doc.normalized_property.id} />
         </div>
       </div>
     </main>
