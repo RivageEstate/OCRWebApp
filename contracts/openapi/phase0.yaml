@@ -120,6 +120,41 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           $ref: "#/components/responses/NotFound"
+  /api/properties/{propertyId}/revisions:
+    get:
+      tags:
+        - properties
+      summary: 物件の変更履歴を取得（最新10件）
+      security:
+        - sessionAuth: []
+      parameters:
+        - name: propertyId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: 取得成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevisionEntry"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: 所有者以外のアクセス
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFound"
   /api/properties/{propertyId}/export:
     get:
       tags:
@@ -340,6 +375,26 @@ components:
         updated_at:
           type: string
           format: date-time
+    RevisionEntry:
+      type: object
+      required:
+        - revision_id
+        - changed_at
+        - before
+        - after
+      properties:
+        revision_id:
+          type: string
+          format: uuid
+        changed_at:
+          type: string
+          format: date-time
+        before:
+          type: object
+          description: 変更前スナップショット
+        after:
+          type: object
+          description: 変更後スナップショット
     UpdatePropertyRequest:
       type: object
       properties:
