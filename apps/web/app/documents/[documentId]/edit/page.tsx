@@ -4,6 +4,7 @@ import { prisma } from "@ocrwebapp/db";
 import { isValidUuid } from "@ocrwebapp/domain";
 import { PropertyEditForm, NormalizedProperty } from "../../../components/PropertyEditForm";
 import { ExportButtons } from "../../../components/ExportButtons";
+import { RevisionHistory } from "../../../components/RevisionHistory";
 
 type Props = {
   params: Promise<{ documentId: string }>;
@@ -24,6 +25,12 @@ type DocumentWithProperty = {
     created_at: string;
   } | null;
   normalized_property: NormalizedProperty | null;
+  revisions: {
+    revision_id: string;
+    changed_at: string;
+    before: Record<string, unknown>;
+    after: Record<string, unknown>;
+  }[];
 };
 
 async function getDocument(documentId: string): Promise<DocumentWithProperty | null> {
@@ -68,7 +75,17 @@ async function getDocument(documentId: string): Promise<DocumentWithProperty | n
           builtYear: true,
           stationInfo: true,
           editableFields: true,
-          updatedAt: true
+          updatedAt: true,
+          revisions: {
+            select: {
+              id: true,
+              createdAt: true,
+              before: true,
+              after: true
+            },
+            orderBy: { createdAt: "desc" },
+            take: 10
+          }
         },
         take: 1,
         orderBy: { createdAt: "desc" }
@@ -116,7 +133,15 @@ async function getDocument(documentId: string): Promise<DocumentWithProperty | n
           editable_fields: property.editableFields as Record<string, unknown> | null,
           updated_at: property.updatedAt.toISOString()
         }
-      : null
+      : null,
+    revisions: property
+      ? property.revisions.map((r) => ({
+          revision_id: r.id,
+          changed_at: r.createdAt.toISOString(),
+          before: r.before as Record<string, unknown>,
+          after: r.after as Record<string, unknown>
+        }))
+      : []
   };
 }
 
@@ -171,6 +196,7 @@ export default async function DocumentEditPage({ params }: Props) {
           <PropertyEditForm property={doc.normalized_property} />
           <ExportButtons propertyId={doc.normalized_property.id} />
         </div>
+        <RevisionHistory revisions={doc.revisions} />
       </div>
     </main>
   );

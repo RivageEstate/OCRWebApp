@@ -218,8 +218,8 @@ export async function PUT(request: Request, { params }: Params) {
           data: {
             propertyId,
             changedBy: userId,
-            before,
-            after
+            before: before as object,
+            after: after as object
           }
         });
       }

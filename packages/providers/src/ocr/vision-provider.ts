@@ -1,11 +1,11 @@
-import vision from "@google-cloud/vision";
+import { ImageAnnotatorClient } from "@google-cloud/vision";
 import type { OCRProvider, OCRResult } from "@ocrwebapp/domain";
 
 export class GoogleVisionOCRProvider implements OCRProvider {
-  private client: vision.ImageAnnotatorClient;
+  private client: ImageAnnotatorClient;
 
   constructor() {
-    this.client = new vision.ImageAnnotatorClient();
+    this.client = new ImageAnnotatorClient();
   }
 
   async extractText(imageUrl: string, _options?: { signal?: AbortSignal }): Promise<OCRResult> {
