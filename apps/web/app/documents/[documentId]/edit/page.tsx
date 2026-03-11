@@ -10,6 +10,13 @@ type Props = {
   params: Promise<{ documentId: string }>;
 };
 
+type PropertyRevision = {
+  id: string;
+  createdAt: Date;
+  before: unknown;
+  after: unknown;
+};
+
 type DocumentWithProperty = {
   document_id: string;
   latest_job: {
@@ -135,7 +142,7 @@ async function getDocument(documentId: string): Promise<DocumentWithProperty | n
         }
       : null,
     revisions: property
-      ? property.revisions.map((r) => ({
+      ? property.revisions.map((r: PropertyRevision) => ({
           revision_id: r.id,
           changed_at: r.createdAt.toISOString(),
           before: r.before as Record<string, unknown>,

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@ocrwebapp/db";
 import { requireUserId, UnauthorizedError } from "@/lib/auth/session";
 import { isValidUuid } from "@ocrwebapp/domain";
@@ -205,7 +206,7 @@ export async function PUT(request: Request, { params }: Params) {
       );
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const prop = await tx.normalizedProperty.update({
         where: { id: propertyId },
         data: updateData

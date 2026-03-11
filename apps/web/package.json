@@ -3,17 +3,26 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "prebuild": "prisma generate --schema ../../packages/db/prisma/schema.prisma",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "eslint": "^9.21.0",
+    "eslint-config-next": "15.2.8",
+    "prisma": "^6.4.1",
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "@ocrwebapp/db": "0.0.0",
     "@ocrwebapp/domain": "0.0.0",
     "@ocrwebapp/providers": "0.0.0",
     "@types/pdfkit": "^0.17.5",
-    "next": "15.2.0",
+    "next": "15.2.8",
     "next-auth": "^5.0.0-beta.30",
     "pdfkit": "^0.17.2",
     "react": "19.0.0",

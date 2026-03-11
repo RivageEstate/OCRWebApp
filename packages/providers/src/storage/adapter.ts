@@ -4,7 +4,8 @@ import { R2StorageAdapter } from "./r2-adapter";
 class LocalStubStorageAdapter implements StorageAdapter {
   async upload(file: File): Promise<string> {
     const now = new Date().toISOString().replace(/[:.]/g, "-");
-    return `stub/${now}-${file.name}`;
+    const uniqueSuffix = crypto.randomUUID();
+    return `stub/${now}-${uniqueSuffix}-${file.name}`;
   }
 
   async getSignedUrl(path: string): Promise<string> {
@@ -22,4 +23,3 @@ export function getStorageAdapter(): StorageAdapter {
   }
   return new LocalStubStorageAdapter();
 }
-
