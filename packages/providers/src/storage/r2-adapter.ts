@@ -31,7 +31,8 @@ export class R2StorageAdapter implements StorageAdapter {
 
   async upload(file: File): Promise<string> {
     const now = new Date().toISOString().replace(/[:.]/g, "-");
-    const key = `uploads/${now}-${file.name}`;
+    const uniqueSuffix = crypto.randomUUID();
+    const key = `uploads/${now}-${uniqueSuffix}-${file.name}`;
     const bytes = await file.arrayBuffer();
 
     await this.client.send(
