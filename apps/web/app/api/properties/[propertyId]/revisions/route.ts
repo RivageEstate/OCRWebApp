@@ -7,6 +7,13 @@ type Params = {
   params: Promise<{ propertyId: string }>;
 };
 
+type RevisionListItem = {
+  id: string;
+  createdAt: Date;
+  before: unknown;
+  after: unknown;
+};
+
 export async function GET(request: Request, { params }: Params) {
   try {
     const userId = await requireUserId(request);
@@ -43,7 +50,7 @@ export async function GET(request: Request, { params }: Params) {
     });
 
     return NextResponse.json(
-      revisions.map((r) => ({
+      revisions.map((r: RevisionListItem) => ({
         revision_id: r.id,
         changed_at: r.createdAt.toISOString(),
         before: r.before,
