@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@ocrwebapp/db";
 import { requireUserId, UnauthorizedError } from "@/lib/auth/session";
 import { getStorageAdapter } from "@ocrwebapp/providers";
@@ -34,7 +35,7 @@ export async function POST(request: Request) {
     const storage = getStorageAdapter();
     const filePath = await storage.upload(file);
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const document = await tx.document.create({
         data: {
           userId,
