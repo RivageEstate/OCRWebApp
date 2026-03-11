@@ -2,15 +2,37 @@ import Link from "next/link";
 
 export default function Header() {
   return (
-    <header className="flex items-center justify-between border-b bg-background px-4 py-3 sm:px-8">
-      <Link href="/" className="text-lg font-bold text-foreground no-underline">
+    <header style={styles.header}>
+      <Link href="/" style={styles.logo}>
         OCRWebApp
       </Link>
       <nav>
-        <Link href="/upload" className="text-sm text-primary no-underline hover:underline">
+        <Link href="/upload" style={styles.navLink}>
           新規アップロード
         </Link>
       </nav>
     </header>
   );
 }
+
+const styles = {
+  header: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "0.75rem clamp(1rem, 4vw, 2rem)",
+    borderBottom: "1px solid #e0e0e0",
+    backgroundColor: "#fff",
+  },
+  logo: {
+    fontWeight: "bold",
+    fontSize: "1.1rem",
+    textDecoration: "none",
+    color: "#111",
+  },
+  navLink: {
+    fontSize: "0.95rem",
+    textDecoration: "none",
+    color: "#0070f3",
+  },
+} as const;
