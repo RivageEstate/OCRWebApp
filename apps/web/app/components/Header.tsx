@@ -20,7 +20,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "0.75rem 2rem",
+    padding: "0.75rem clamp(1rem, 4vw, 2rem)",
     borderBottom: "1px solid #e0e0e0",
     backgroundColor: "#fff",
   },
