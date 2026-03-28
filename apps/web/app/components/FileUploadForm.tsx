@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { Upload } from 'lucide-react';
+import { Button } from './ui/button';
+import { Alert, AlertDescription } from './ui/alert';
 
 export function FileUploadForm() {
   const router = useRouter();
@@ -52,21 +55,24 @@ export function FileUploadForm() {
 
       <label
         htmlFor="file"
-        className={`min-h-64 rounded-lg border-2 border-dashed flex flex-col items-center justify-center px-4 py-10 text-center cursor-pointer transition-colors ${isUploading ? 'border-gray-300 bg-gray-50' : 'hover:border-primary/20 bg-secondary/50 dark:hover:border-primary/20 dark:bg-secondary/10'}`}
+        className={`min-h-64 rounded-lg border-2 border-dashed flex flex-col items-center justify-center px-4 py-10 text-center cursor-pointer transition-colors ${isUploading ? 'border-muted bg-muted/50' : 'border-border hover:border-primary/40 bg-card'}`}
       >
         <div className="text-muted-foreground mb-4">
           {isUploading ? (
-            <svg className="mx-auto h-12 w-12 animate-spin text-gray-400" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity="20" />
+            <svg className="mx-auto h-12 w-12 animate-spin text-muted-foreground/50" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" opacity={0.2} />
               <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" fill="none" />
             </svg>
           ) : (
-            <span aria-hidden="true">📤 クリックしてファイルを選択</span>
+            <div className="flex flex-col items-center gap-2">
+              <Upload className="h-10 w-10 text-muted-foreground/60" />
+              <span>クリックしてファイルを選択</span>
+            </div>
           )}
         </div>
 
         {!isUploading && (
-          <p className="mb-1">最大 20MB<br />JPG, PNG, WebP, PDF 対応</p>
+          <p className="text-sm text-muted-foreground mb-1">最大 20MB — JPG, PNG, WebP, PDF 対応</p>
         )}
 
         {selectedFile && !isUploading && (
@@ -75,18 +81,15 @@ export function FileUploadForm() {
       </label>
 
       {selectedFile && !isUploading && (
-        <button
-          type="submit"
-          className="mt-4 w-full bg-primary text-white py-2 px-3 rounded-md text-sm font-medium transition-colors hover:bg-primary/90"
-        >
+        <Button type="submit" className="mt-4 w-full">
           アップロード
-        </button>
+        </Button>
       )}
 
       {uploadError && (
-        <div className="mt-4 rounded-md bg-destructive text-white p-3 flex gap-2 items-start font-mono text-sm" role="alert">
-          <span aria-hidden="true">⚠️</span>{uploadError}
-        </div>
+        <Alert variant="destructive" className="mt-4">
+          <AlertDescription>{uploadError}</AlertDescription>
+        </Alert>
       )}
     </form>
   );

@@ -1,19 +1,64 @@
-:root {
-  color-scheme: light;
+@import "tailwindcss";
+
+@theme {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --radius: 0.5rem;
+  --font-heading: var(--font-heading, sans-serif);
+  --font-body: var(--font-body, sans-serif);
 }
 
-* {
-  box-sizing: border-box;
-}
+@layer base {
+  :root {
+    --background: 36 33% 97%;
+    --foreground: 18 12% 15%;
+    --card: 40 100% 99%;
+    --card-foreground: 18 12% 15%;
+    --popover: 40 100% 99%;
+    --popover-foreground: 18 12% 15%;
+    --primary: 40 76% 31%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 33 30% 93%;
+    --secondary-foreground: 18 12% 15%;
+    --muted: 33 30% 93%;
+    --muted-foreground: 24 10% 44%;
+    --accent: 33 30% 93%;
+    --accent-foreground: 18 12% 15%;
+    --destructive: 0 72% 41%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 18% 87%;
+    --input: 28 15% 80%;
+    --ring: 40 76% 31%;
 
-body {
-  margin: 0;
-  padding: 0;
-  font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
-}
+    color-scheme: light;
+  }
 
-main {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-body), "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  }
 }

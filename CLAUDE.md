@@ -26,6 +26,7 @@ bash scripts/check.sh
 ## Architecture
 
 **Stack:** Next.js 15 (App Router) + TypeScript + Prisma + PostgreSQL (Supabase) + Vitest
+**Monorepo:** npm workspaces (`apps/*`, `packages/*`)
 
 **Goal:** Real estate document processing — photo of property overview sheet → OCR/AI → normalized editable data → export. Phase 0 covers OCR ingestion, format standardization, and data export.
 
@@ -46,7 +47,7 @@ Client → API Route (apps/web/app/api/) → packages/ utilities → Prisma (Pos
 
 - **Adapter pattern:** OCR / LLM / Storage are accessed only through abstract interfaces in `packages/domain/src/providers/` and implementations in `packages/providers/src/` — never call SDKs directly in app code.
 - **Data separation:** Raw OCR extraction (`extractions` table) and confirmed editable data (`normalized_properties` table) must remain separate. Do not collapse them.
-- **Auth:** Currently a temporary `x-user-id` header (UUID). Lives in `apps/web/lib/auth/session.ts`. NextAuth is planned but not yet integrated.
+- **Auth:** NextAuth v5 (Google OAuth, JWT session). Config in `apps/web/auth.ts`, session helper in `apps/web/lib/auth/session.ts`. `AUTH_SECRET` (または `NEXTAUTH_SECRET`) が必須。
 - **Job state machine:** `queued → processing → succeeded | failed`. Logic in `packages/domain/src/jobs/status.ts`.
 - **UUID everywhere:** All primary keys are UUIDs. Validate path/query params with `packages/domain/src/validation/uuid.ts`.
 
@@ -65,6 +66,22 @@ docs/             # requirements/, design/, adr/, operations/
 ### Database Tables
 
 `users` → `documents` → `extractions` (raw OCR) / `normalized_properties` (editable) / `jobs` (async queue). `revisions` tracks edits to `normalized_properties`. JSONB is used for flexible fields (`bounding_boxes`, `editable_fields`).
+
+## Environment
+
+`.env.example` に全変数の一覧あり。主要カテゴリ:
+
+- **Auth:** `AUTH_SECRET`, Google OAuth (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`)
+- **DB:** `DATABASE_URL` (Supabase PostgreSQL)
+- **Storage:** Cloudflare R2 (`R2_*`)
+- **AI/OCR:** `OPENAI_API_KEY`, Google Vision
+- **Async:** Cloud Tasks (`GCLOUD_PROJECT`, `CLOUD_TASKS_*`)
+
+## Gotchas
+
+- `apps/web` の `prebuild` スクリプトが Prisma Client を自動生成する。schema 変更後は `npm run prisma:generate` を忘れずに。
+- TypeScript パスエイリアス `@web/*` は `apps/web/` を指す（`tsconfig.json` で設定）。
+- Docker 開発時は `compose.yaml` + `Dockerfile.dev` を使用。ファイル監視にポーリングを使用（`CHOKIDAR_USEPOLLING`）。
 
 ## Working Rules (from AGENTS.md)
 

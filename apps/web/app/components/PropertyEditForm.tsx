@@ -1,6 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import { Input } from './ui/input';
+import { Button } from './ui/button';
+import { Alert, AlertDescription } from './ui/alert';
 
 export interface NormalizedProperty {
   id: string;
@@ -125,14 +128,14 @@ export function PropertyEditForm({ property }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {saveError && (
-        <div className="rounded-md bg-destructive text-white p-4 text-sm" role="alert">
-          {saveError}
-        </div>
+        <Alert variant="destructive">
+          <AlertDescription>{saveError}</AlertDescription>
+        </Alert>
       )}
       {saveSuccess && (
-        <div className="rounded-md bg-green-100 text-green-800 p-4 text-sm" role="status">
-          保存しました
-        </div>
+        <Alert variant="success" role="status">
+          <AlertDescription>保存しました</AlertDescription>
+        </Alert>
       )}
 
       <div className="space-y-4">
@@ -190,13 +193,9 @@ export function PropertyEditForm({ property }: Props) {
       </div>
 
       <div className="pt-2">
-        <button
-          type="submit"
-          disabled={isSaving}
-          className="w-full rounded-md bg-primary text-primary-foreground py-2 px-4 text-sm font-medium disabled:opacity-50"
-        >
+        <Button type="submit" disabled={isSaving} className="w-full">
           {isSaving ? '保存中...' : '保存する'}
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -218,12 +217,11 @@ function Field({
   return (
     <div className="space-y-1">
       <label className="block text-sm font-medium">{label}</label>
-      <input
+      <Input
         type="text"
         value={value}
         onChange={e => onChange(e.target.value)}
         inputMode={inputMode}
-        className="w-full rounded-md border px-3 py-2 text-sm"
         aria-invalid={!!error}
       />
       {error && (
