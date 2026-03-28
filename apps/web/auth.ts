@@ -3,6 +3,7 @@ import Google from "next-auth/providers/google";
 import { prisma } from "@ocrwebapp/db";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  debug: true,
   providers: [
     Google({
       clientId: process.env.AUTH_GOOGLE_ID ?? process.env.GOOGLE_CLIENT_ID ?? "",
