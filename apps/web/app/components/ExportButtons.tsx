@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { Download, Loader2 } from 'lucide-react';
+import { Button } from './ui/button';
 
 type Props = {
   propertyId: string;
@@ -45,74 +47,33 @@ export function ExportButtons({ propertyId }: Props) {
         </p>
       )}
       <div className="flex gap-3">
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={() => handleDownload('csv')}
           disabled={loadingCsv || loadingPdf}
-          className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
         >
           {loadingCsv ? (
-            <Spinner />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <DownloadIcon />
+            <Download className="h-4 w-4" aria-hidden="true" />
           )}
           CSVをダウンロード
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant="outline"
           onClick={() => handleDownload('pdf')}
           disabled={loadingCsv || loadingPdf}
-          className="inline-flex items-center gap-2 rounded-md border border-input bg-background px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground disabled:pointer-events-none disabled:opacity-50"
         >
           {loadingPdf ? (
-            <Spinner />
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
           ) : (
-            <DownloadIcon />
+            <Download className="h-4 w-4" aria-hidden="true" />
           )}
           PDFをダウンロード
-        </button>
+        </Button>
       </div>
     </div>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
-
-function Spinner() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="animate-spin"
-      aria-hidden="true"
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
   );
 }

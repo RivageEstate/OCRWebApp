@@ -5,6 +5,9 @@ import { isValidUuid } from "@ocrwebapp/domain";
 import { PropertyEditForm, NormalizedProperty } from "../../../components/PropertyEditForm";
 import { ExportButtons } from "../../../components/ExportButtons";
 import { RevisionHistory } from "../../../components/RevisionHistory";
+import { PageShell } from "../../../components/PageShell";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card";
+import { Button } from "../../../components/ui/button";
 
 type Props = {
   params: Promise<{ documentId: string }>;
@@ -158,53 +161,59 @@ export default async function DocumentEditPage({ params }: Props) {
 
   if (!doc) {
     return (
-      <main className="min-h-screen bg-background">
-        <div className="container max-w-2xl mx-auto py-10 px-4">
-          <p className="text-muted-foreground">ドキュメントが見つかりません</p>
-        </div>
-      </main>
+      <PageShell>
+        <p className="text-muted-foreground">ドキュメントが見つかりません</p>
+      </PageShell>
     );
   }
 
   if (!doc.normalized_property) {
     return (
-      <main className="min-h-screen bg-background">
-        <div className="container max-w-2xl mx-auto py-10 px-4">
-          <h1 className="text-3xl font-semibold mb-4">物件情報の編集</h1>
-          <p className="text-muted-foreground">
-            OCR解析がまだ完了していません。処理完了後にご利用ください。
-          </p>
-          {doc.latest_job && (
-            <Link href={`/jobs/${doc.latest_job.job_id}`} className="mt-4 inline-block text-sm text-primary underline">
+      <PageShell>
+        <h1 className="text-3xl font-semibold font-[family-name:var(--font-heading)] tracking-wide mb-4">
+          物件情報の編集
+        </h1>
+        <p className="text-muted-foreground">
+          OCR解析がまだ完了していません。処理完了後にご利用ください。
+        </p>
+        {doc.latest_job && (
+          <Button variant="link" asChild className="mt-4 px-0">
+            <Link href={`/jobs/${doc.latest_job.job_id}`}>
               処理状況を確認する
             </Link>
-          )}
-        </div>
-      </main>
+          </Button>
+        )}
+      </PageShell>
     );
   }
 
   return (
-    <main className="min-h-screen bg-background">
-      <div className="container max-w-2xl mx-auto py-10 px-4">
-        <h1 className="text-3xl font-semibold mb-8">物件情報の編集</h1>
-        {doc.latest_extraction && (
-          <div className="rounded-lg border bg-card p-6 mb-6">
-            <h2 className="text-lg font-semibold mb-2">OCR抽出結果</h2>
-            <p className="text-xs text-muted-foreground mb-3">
+    <PageShell>
+      <h1 className="text-3xl font-semibold font-[family-name:var(--font-heading)] tracking-wide mb-8">
+        物件情報の編集
+      </h1>
+      {doc.latest_extraction && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>OCR抽出結果</CardTitle>
+            <CardDescription>
               OCR生データは参照専用です。確定データは下のフォームで編集してください。
-            </p>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
             <pre className="whitespace-pre-wrap break-words rounded-md bg-muted p-4 text-xs overflow-auto">
               {doc.latest_extraction.raw_text}
             </pre>
-          </div>
-        )}
-        <div className="rounded-lg border bg-card p-6">
+          </CardContent>
+        </Card>
+      )}
+      <Card>
+        <CardContent className="p-6">
           <PropertyEditForm property={doc.normalized_property} />
           <ExportButtons propertyId={doc.normalized_property.id} />
-        </div>
-        <RevisionHistory revisions={doc.revisions} />
-      </div>
-    </main>
+        </CardContent>
+      </Card>
+      <RevisionHistory revisions={doc.revisions} />
+    </PageShell>
   );
 }
