@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function Header() {
   return (
     <header className="flex items-center justify-between px-8 py-3 border-b border-border bg-card">
-      <Link href="/" className="font-[family-name:var(--font-heading)] font-semibold text-lg text-foreground no-underline tracking-wide">
+      <Link href="/" className="font-heading font-semibold text-lg text-foreground no-underline tracking-wide">
         OCRWebApp
       </Link>
       <nav>

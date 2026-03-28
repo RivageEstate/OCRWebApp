@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 export default function HomePage() {
   return (
     <PageShell>
-      <h1 className="font-[family-name:var(--font-heading)] text-3xl font-semibold mb-4 tracking-wide">
+      <h1 className="font-heading text-3xl font-semibold mb-4 tracking-wide">
         物件概要書 OCR 解析ツール
       </h1>
       <p className="text-muted-foreground mb-8 leading-relaxed">

@@ -10,7 +10,7 @@ export default async function JobStatusPage({ params }: Props) {
 
   return (
     <PageShell>
-      <h1 className="font-[family-name:var(--font-heading)] text-3xl font-semibold mb-8 tracking-wide">
+      <h1 className="font-heading text-3xl font-semibold mb-8 tracking-wide">
         処理状況
       </h1>
       <PollingJobStatus jobId={jobId} />
