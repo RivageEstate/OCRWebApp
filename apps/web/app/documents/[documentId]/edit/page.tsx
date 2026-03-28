@@ -170,7 +170,7 @@ export default async function DocumentEditPage({ params }: Props) {
   if (!doc.normalized_property) {
     return (
       <PageShell>
-        <h1 className="text-3xl font-semibold font-[family-name:var(--font-heading)] tracking-wide mb-4">
+        <h1 className="text-3xl font-semibold font-heading tracking-wide mb-4">
           物件情報の編集
         </h1>
         <p className="text-muted-foreground">
@@ -189,7 +189,7 @@ export default async function DocumentEditPage({ params }: Props) {
 
   return (
     <PageShell>
-      <h1 className="text-3xl font-semibold font-[family-name:var(--font-heading)] tracking-wide mb-8">
+      <h1 className="text-3xl font-semibold font-heading tracking-wide mb-8">
         物件情報の編集
       </h1>
       {doc.latest_extraction && (
