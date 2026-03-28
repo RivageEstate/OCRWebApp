@@ -1,6 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Card, CardContent } from './ui/card';
+import { Alert, AlertDescription } from './ui/alert';
+import { Button } from './ui/button';
 
 export interface JobStatus {
   job_id: string;
@@ -14,15 +17,10 @@ const POLL_INTERVAL_MS = 2000;
 
 export const STEP_LABELS = ['アップロード完了', 'OCR処理中', '編集へ進む'] as const;
 
-/**
- * ジョブステータスから現在アクティブなステップインデックスを返す。
- * 0: アップロード完了, 1: OCR処理中, 2: 編集へ進む
- * failed の場合は -1 を返す。
- */
 export function getActiveStep(status: JobStatus['status']): number {
   if (status === 'succeeded') return 2;
   if (status === 'failed') return -1;
-  return 1; // queued | processing
+  return 1;
 }
 
 function StepIndicator({ status }: { status: JobStatus['status'] }) {
@@ -48,7 +46,7 @@ function StepIndicator({ status }: { status: JobStatus['status'] }) {
                     ? 'bg-primary border-primary text-primary-foreground'
                     : isActive && status !== 'failed'
                     ? 'bg-primary border-primary text-primary-foreground'
-                    : 'bg-background border-muted-foreground/30 text-muted-foreground',
+                    : 'bg-background border-input text-muted-foreground',
                 ].join(' ')}
                 aria-current={isActive ? 'step' : undefined}
               >
@@ -78,7 +76,7 @@ function StepIndicator({ status }: { status: JobStatus['status'] }) {
               <div
                 className={[
                   'flex-1 h-0.5 mx-2 mb-5 transition-colors',
-                  isPast ? 'bg-primary' : 'bg-muted-foreground/20',
+                  isPast ? 'bg-primary' : 'bg-input',
                 ].join(' ')}
                 aria-hidden="true"
               />
@@ -137,9 +135,9 @@ export function PollingJobStatus({ jobId }: { jobId: string }) {
 
   if (error) {
     return (
-      <div className="rounded-md bg-destructive text-white p-6" role="alert">
-        ⚠️ {error}
-      </div>
+      <Alert variant="destructive">
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
   }
 
@@ -156,30 +154,33 @@ export function PollingJobStatus({ jobId }: { jobId: string }) {
       <StepIndicator status={jobStatus.status} />
 
       {jobStatus.status === 'succeeded' && (
-        <div className="rounded-lg border bg-card p-6 space-y-3">
-          <p className="text-sm text-muted-foreground">
-            OCR処理が完了しました。
-          </p>
-          <a
-            href={`/documents/${jobStatus.document_id}/edit`}
-            className="inline-block rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold"
-          >
-            物件情報を確認・編集する
-          </a>
-        </div>
+        <Card>
+          <CardContent className="p-6 space-y-3">
+            <p className="text-sm text-muted-foreground">
+              OCR処理が完了しました。
+            </p>
+            <Button asChild>
+              <a href={`/documents/${jobStatus.document_id}/edit`}>
+                物件情報を確認・編集する
+              </a>
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {jobStatus.status === 'failed' && (
-        <div className="rounded-lg border border-destructive/30 bg-card p-6 space-y-3">
-          <p className="text-sm text-destructive font-medium" role="alert">
-            {jobStatus.error_message
-              ? `エラー：${jobStatus.error_message}`
-              : '処理に失敗しました。'}
-          </p>
-          <a href="/upload" className="text-sm text-primary underline">
-            別のファイルをアップロードする
-          </a>
-        </div>
+        <Card className="border-destructive/30">
+          <CardContent className="p-6 space-y-3">
+            <p className="text-sm text-destructive font-medium" role="alert">
+              {jobStatus.error_message
+                ? `エラー：${jobStatus.error_message}`
+                : '処理に失敗しました。'}
+            </p>
+            <Button variant="link" asChild className="px-0">
+              <a href="/upload">別のファイルをアップロードする</a>
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {jobStatus.status === 'queued' && (
