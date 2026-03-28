@@ -42,9 +42,7 @@ function StepIndicator({ status }: { status: JobStatus['status'] }) {
               <div
                 className={[
                   'flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold border-2 transition-colors',
-                  isPast
-                    ? 'bg-primary border-primary text-primary-foreground'
-                    : isActive && status !== 'failed'
+                  isPast || (isActive && status !== 'failed')
                     ? 'bg-primary border-primary text-primary-foreground'
                     : 'bg-background border-input text-muted-foreground',
                 ].join(' ')}

@@ -24,8 +24,12 @@ __pycache__/
 
 # Env files
 .env
+.envs
 .env.*
 !.env.example
+
+# Superpowers brainstorm
+.superpowers/
 
 # Workspace memos
 /tmp/
