@@ -4,24 +4,12 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { Button } from './ui/button';
+import { type JobStatus, TERMINAL_STATUSES, STEP_LABELS, getActiveStep } from './job-status-utils';
 
-export interface JobStatus {
-  job_id: string;
-  document_id: string;
-  status: 'queued' | 'processing' | 'succeeded' | 'failed';
-  error_message?: string | null;
-}
+export type { JobStatus };
+export { STEP_LABELS, getActiveStep };
 
-const TERMINAL_STATUSES = new Set<JobStatus['status']>(['succeeded', 'failed']);
 const POLL_INTERVAL_MS = 2000;
-
-export const STEP_LABELS = ['アップロード完了', 'OCR処理中', '編集へ進む'] as const;
-
-export function getActiveStep(status: JobStatus['status']): number {
-  if (status === 'succeeded') return 2;
-  if (status === 'failed') return -1;
-  return 1;
-}
 
 function StepIndicator({ status }: { status: JobStatus['status'] }) {
   const activeStep = getActiveStep(status);

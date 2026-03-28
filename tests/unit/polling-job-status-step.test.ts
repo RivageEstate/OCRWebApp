@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getActiveStep } from '../../apps/web/app/components/PollingJobStatus';
+import { getActiveStep } from '../../apps/web/app/components/job-status-utils';
 
 describe('getActiveStep', () => {
   it('returns 1 for queued', () => {
