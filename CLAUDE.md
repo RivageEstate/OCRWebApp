@@ -70,6 +70,7 @@ docs/             # requirements/, design/, adr/, operations/
 ## Environment
 
 `.env.example` に全変数の一覧あり。主要カテゴリ:
+
 - **Auth:** `AUTH_SECRET`, Google OAuth (`AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`)
 - **DB:** `DATABASE_URL` (Supabase PostgreSQL)
 - **Storage:** Cloudflare R2 (`R2_*`)
