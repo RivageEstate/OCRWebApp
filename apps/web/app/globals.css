@@ -21,8 +21,8 @@
   --color-input: hsl(var(--input));
   --color-ring: hsl(var(--ring));
   --radius: 0.5rem;
-  --font-heading: var(--font-heading);
-  --font-body: var(--font-body);
+  --font-heading: var(--font-heading, sans-serif);
+  --font-body: var(--font-body, sans-serif);
 }
 
 @layer base {
